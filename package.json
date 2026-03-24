@@ -1,0 +1,25 @@
+{
+  "name": "ai-collaboration",
+  "version": "1.0.0",
+  "description": "Multi-agent AI debate and collaboration app — Claude, GPT-4o, Gemini in real-time conversation",
+  "main": "proxy-server.js",
+  "scripts": {
+    "start": "node proxy-server.js",
+    "proxy": "node proxy-server.js"
+  },
+  "keywords": [
+    "ai",
+    "multi-agent",
+    "claude",
+    "gpt-4o",
+    "gemini",
+    "debate",
+    "collaboration",
+    "llm"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
