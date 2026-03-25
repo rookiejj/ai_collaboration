@@ -1,0 +1,18 @@
+{
+    "version": 2,
+    "outputDirectory": "public",
+    "functions": {
+        "api/openai.js": {
+            "maxDuration": 30
+        },
+        "api/gemini.js": {
+            "maxDuration": 30
+        }
+    },
+    "rewrites": [
+        {
+            "source": "/",
+            "destination": "/ai-collaboration.html"
+        }
+    ]
+}
