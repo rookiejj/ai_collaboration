@@ -1113,7 +1113,7 @@
           <option value="4">4 라운드</option>
           <option value="5">5 라운드</option>
         </select>
-        <button class="primary" id="start-btn" onclick="closeDrawers(); startDebate()">▶ 토론 시작</button>
+        <button class="primary" id="start-btn" onclick="startDebate()">▶ 토론 시작</button>
         <button id="stop-btn" onclick="stopDebate()"
           style="display:none;width:100%;margin-top:6px;border-radius:7px;padding:8px 0;font-size:13px;color:#f87171;border-color:rgba(248,113,113,0.35);">■
           중단</button>
@@ -1888,6 +1888,8 @@
       const active = getActive();
       if (active.length < 2) { alert('최소 2개 이상의 API 키를 입력하고 참여자를 활성화해주세요.'); return; }
       const rounds = parseInt($('rounds-select').value);
+
+      closeDrawers(); // 유효성 검사 통과 후에 닫기
 
       $('messages').innerHTML = '';
       history = []; running = true; stopped = false;
