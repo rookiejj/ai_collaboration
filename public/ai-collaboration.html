@@ -788,6 +788,187 @@
       font-size: 14px;
       color: var(--text-1);
     }
+
+    /* ── 모바일 드로어 오버레이 ── */
+    .drawer-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 200;
+    }
+
+    .drawer-overlay.show {
+      display: block;
+    }
+
+    /* ── 하단 탭바 (모바일 전용) ── */
+    .bottom-nav {
+      display: none;
+    }
+
+    /* ── 반응형 ── */
+    @media (max-width: 768px) {
+      body {
+        overflow: hidden;
+      }
+
+      /* 헤더 간소화 */
+      header {
+        padding: 9px 14px;
+      }
+
+      .logo {
+        font-size: 13px;
+      }
+
+      .proxy-badge {
+        display: none;
+      }
+
+      #logo-title {
+        display: none;
+      }
+
+      /* 3컬럼 → 1컬럼 */
+      .main {
+        position: relative;
+      }
+
+      /* 사이드바: 왼쪽 드로어 */
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 80vw;
+        max-width: 300px;
+        z-index: 300;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        background: var(--bg-1);
+        border-right: 1px solid var(--border-1);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      /* 가이드 패널: 오른쪽 드로어 */
+      .guide-panel {
+        position: fixed;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 80vw;
+        max-width: 300px;
+        z-index: 300;
+        transform: translateX(100%);
+        transition: transform 0.25s ease;
+        background: var(--bg-1);
+        border-left: 1px solid var(--border-1);
+      }
+
+      .guide-panel.open {
+        transform: translateX(0);
+      }
+
+      /* 채팅 영역: 풀화면 */
+      .debate-area {
+        width: 100%;
+      }
+
+      .messages {
+        padding: 12px 14px;
+        gap: 12px;
+        padding-bottom: 70px;
+      }
+
+      .msg-text {
+        font-size: 13px;
+      }
+
+      /* 하단 탭바 */
+      .bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 52px;
+        background: var(--bg-1);
+        border-top: 1px solid var(--border-0);
+        z-index: 100;
+      }
+
+      .bottom-nav button {
+        flex: 1;
+        border: none;
+        border-radius: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        font-size: 10px;
+        color: var(--text-2);
+        background: transparent;
+        padding: 0;
+      }
+
+      .bottom-nav button.active {
+        color: var(--c-claude);
+      }
+
+      .bottom-nav .nav-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .bottom-nav .nav-divider {
+        width: 1px;
+        background: var(--border-0);
+        align-self: stretch;
+        margin: 8px 0;
+      }
+
+      /* 상태바 하단 패딩 */
+      .status-bar {
+        padding-bottom: 60px;
+      }
+
+      /* 모드 토글 버튼 작게 */
+      #mode-debate-btn,
+      #mode-collab-btn {
+        padding: 4px 9px;
+        font-size: 11px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      header {
+        padding: 8px 12px;
+      }
+
+      .messages {
+        padding: 10px 12px;
+        padding-bottom: 70px;
+      }
+
+      .avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 9px;
+      }
+
+      .msg-name {
+        font-size: 12px;
+      }
+
+      .msg-text {
+        font-size: 13px;
+      }
+    }
   </style>
 </head>
 
@@ -798,6 +979,27 @@
       <div class="stop-modal-text">토론을 중지하는 중...</div>
     </div>
   </div>
+
+  <!-- 모바일 드로어 오버레이 -->
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawers()"></div>
+
+  <!-- 하단 탭바 -->
+  <nav class="bottom-nav">
+    <button id="nav-settings" onclick="toggleDrawer('sidebar')">
+      <span class="nav-icon">⚙</span>
+      <span>설정</span>
+    </button>
+    <div class="nav-divider"></div>
+    <button id="nav-chat" class="active" onclick="closeDrawers()">
+      <span class="nav-icon">💬</span>
+      <span>토론</span>
+    </button>
+    <div class="nav-divider"></div>
+    <button id="nav-guide" onclick="toggleDrawer('guide')">
+      <span class="nav-icon">📖</span>
+      <span>가이드</span>
+    </button>
+  </nav>
   <header>
     <div class="logo">
       <div class="logo-pips">
@@ -950,7 +1152,7 @@
     </div>
 
     <!-- ── Guide Panel ── -->
-    <div class="guide-panel">
+    <div class="guide-panel" id="guide-panel">
 
       <div class="guide-section">
         <h3>시작하기</h3>
@@ -1667,7 +1869,54 @@
       $('progress-txt').textContent = '';
     }
 
-    checkProxy();
+    function toggleDrawer(which) {
+      const sidebar = document.querySelector('.sidebar');
+      const guide = document.getElementById('guide-panel');
+      const overlay = document.getElementById('drawer-overlay');
+      const navChat = document.getElementById('nav-chat');
+      const navSet = document.getElementById('nav-settings');
+      const navGuide = document.getElementById('nav-guide');
+
+      const sidebarOpen = sidebar.classList.contains('open');
+      const guideOpen = guide.classList.contains('open');
+
+      // 닫기
+      sidebar.classList.remove('open');
+      guide.classList.remove('open');
+      overlay.classList.remove('show');
+      navChat.classList.remove('active');
+      navSet.classList.remove('active');
+      navGuide.classList.remove('active');
+
+      if (which === 'sidebar' && !sidebarOpen) {
+        sidebar.classList.add('open');
+        overlay.classList.add('show');
+        navSet.classList.add('active');
+      } else if (which === 'guide' && !guideOpen) {
+        guide.classList.add('open');
+        overlay.classList.add('show');
+        navGuide.classList.add('active');
+      } else {
+        navChat.classList.add('active');
+      }
+    }
+
+    function closeDrawers() {
+      document.querySelector('.sidebar').classList.remove('open');
+      document.getElementById('guide-panel').classList.remove('open');
+      document.getElementById('drawer-overlay').classList.remove('show');
+      document.getElementById('nav-chat').classList.add('active');
+      document.getElementById('nav-settings').classList.remove('active');
+      document.getElementById('nav-guide').classList.remove('active');
+    }
+
+    // 모드 변경 시 탭바 텍스트도 업데이트
+    const _origSetMode = setMode;
+    setMode = function (mode) {
+      _origSetMode(mode);
+      const navChat = document.getElementById('nav-chat');
+      if (navChat) navChat.querySelector('span:last-child').textContent = mode === 'debate' ? '토론' : '협업';
+    };
     document.getElementById('proxy-port').addEventListener('change', checkProxy);
     // Vercel 배포 환경에선 프록시 섹션 숨기기
     if (!isLocal()) {
