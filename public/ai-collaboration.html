@@ -1,955 +1,1685 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Collaboration</title>
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg-0: #09090c; --bg-1: #101014; --bg-2: #16161c; --bg-3: #1e1e26;
-  --border-0: rgba(255,255,255,0.06); --border-1: rgba(255,255,255,0.11);
-  --text-0: #eeeef2; --text-1: #9090a4; --text-2: #7e7e90; --text-3: #55555f;
-  --c-claude: #a78bfa; --c-gpt: #34d399; --c-gemini: #60a5fa; --c-devil: #f87171;
-}
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-0); color: var(--text-0); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-header { display: flex; align-items: center; justify-content: space-between; padding: 11px 20px; border-bottom: 1px solid var(--border-0); flex-shrink: 0; }
-.logo { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 600; }
-.logo-pips { display: flex; gap: 4px; }
-.pip { width: 7px; height: 7px; border-radius: 50%; }
-.header-right { display: flex; gap: 8px; align-items: center; }
-.proxy-badge { font-size: 11px; padding: 3px 9px; border-radius: 20px; border: 1px solid var(--border-1); color: var(--text-3); display: flex; align-items: center; gap: 5px; cursor: pointer; }
-.proxy-badge.ok { color: #34d399; border-color: rgba(52,211,153,0.3); }
-.proxy-badge.err { color: #f87171; border-color: rgba(248,113,113,0.3); }
-.proxy-led { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-button { cursor: pointer; border: 1px solid var(--border-1); background: transparent; color: var(--text-0); font-size: 12px; padding: 6px 12px; border-radius: 6px; transition: background 0.14s; font-family: inherit; white-space: nowrap; }
-button:hover { background: var(--bg-3); }
-button.primary { background: var(--c-claude); border-color: transparent; color: #1a1030; font-weight: 600; font-size: 13px; padding: 8px 0; width: 100%; margin-top: 4px; border-radius: 7px; }
-button.primary:hover { opacity: 0.88; }
-button.primary:disabled { opacity: 0.35; cursor: not-allowed; }
-button.ghost { border-color: transparent; color: var(--text-1); }
-button.ghost:hover { background: var(--bg-2); }
-.main { display: flex; flex: 1; overflow: hidden; }
-.guide-panel { width: 260px; border-left: 1px solid var(--border-0); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; scrollbar-width: thin; scrollbar-color: var(--bg-3) transparent; }
-.guide-panel::-webkit-scrollbar { width: 4px; }
-.guide-panel::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 2px; }
-.guide-section { padding: 14px 16px; border-bottom: 1px solid var(--border-0); }
-.guide-section h3 { font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-3); margin-bottom: 11px; }
-.step { display: flex; gap: 10px; margin-bottom: 12px; }
-.step:last-child { margin-bottom: 0; }
-.step-num { width: 18px; height: 18px; border-radius: 50%; background: var(--bg-3); border: 1px solid var(--border-1); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: var(--text-1); flex-shrink: 0; margin-top: 1px; }
-.step-body { flex: 1; }
-.step-title { font-size: 12px; font-weight: 500; color: var(--text-0); margin-bottom: 3px; line-height: 1.4; }
-.step-desc { font-size: 11px; color: var(--text-2); line-height: 1.6; }
-.step-desc code { font-family: 'Courier New', monospace; font-size: 10px; color: #34d399; background: var(--bg-2); padding: 1px 5px; border-radius: 3px; }
-.guide-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; padding: 2px 7px; border-radius: 10px; margin-bottom: 4px; }
-.badge-opt { background: rgba(167,139,250,0.12); color: #a78bfa; border: 1px solid rgba(167,139,250,0.2); }
-.badge-req { background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.2); }
-.guide-tip { font-size: 11px; color: var(--text-2); line-height: 1.6; padding: 8px 10px; background: var(--bg-2); border-radius: 6px; border-left: 2px solid var(--border-1); margin-top: 8px; }
-.guide-tip b { color: var(--text-1); font-weight: 500; }
-.key-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-.key-table td { font-size: 10px; padding: 4px 0; vertical-align: top; line-height: 1.5; }
-.key-table td:first-child { color: var(--text-2); width: 52px; flex-shrink: 0; }
-.key-table td:last-child { color: var(--text-1); }
-.key-table td code { font-family: 'Courier New', monospace; font-size: 9px; color: #34d399; }
-.sidebar { width: 272px; border-right: 1px solid var(--border-0); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; scrollbar-width: thin; }
-.sidebar-section { padding: 14px 16px; border-bottom: 1px solid var(--border-0); }
-.sidebar-section h3 { font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-3); margin-bottom: 11px; }
-label { display: block; font-size: 11px; color: var(--text-1); margin-bottom: 4px; }
-input[type="text"], input[type="password"], input[type="number"], textarea, select { width: 100%; background: var(--bg-2); border: 1px solid var(--border-1); border-radius: 6px; color: var(--text-0); font-size: 12px; padding: 7px 9px; font-family: inherit; margin-bottom: 8px; outline: none; }
-input:focus, textarea:focus, select:focus { border-color: rgba(167,139,250,0.4); }
-textarea { resize: vertical; min-height: 66px; line-height: 1.5; }
-select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 9px center; }
-input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; accent-color: var(--c-claude); flex-shrink: 0; }
-.model-block { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border-0); }
-.model-block:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-.model-row { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
-.model-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.model-row label { margin: 0; font-size: 12px; color: var(--text-0); cursor: pointer; flex: 1; font-weight: 500; }
-.model-persona { font-size: 10px; color: var(--text-2); padding-left: 14px; margin-bottom: 5px; line-height: 1.4; }
-.key-input-wrap { position: relative; }
-.key-input-wrap input { padding-right: 28px; font-family: 'Courier New', monospace; font-size: 11px; }
-.key-status { position: absolute; right: 8px; top: 50%; transform: translateY(-70%); font-size: 11px; color: #34d399; }
-.note { font-size: 10px; color: var(--text-2); padding-left: 14px; margin-bottom: 5px; font-style: italic; }
-.proxy-info { background: var(--bg-2); border: 1px solid var(--border-1); border-radius: 7px; padding: 10px 11px; margin-bottom: 8px; }
-.proxy-info code { display: block; font-family: 'Courier New', monospace; font-size: 11px; color: #34d399; margin: 3px 0 1px; }
-.proxy-info p { font-size: 10px; color: var(--text-2); line-height: 1.5; margin-top: 5px; }
-.debate-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.topic-bar { padding: 10px 20px; border-bottom: 1px solid var(--border-0); display: none; align-items: center; gap: 12px; flex-shrink: 0; background: var(--bg-1); }
-.topic-text { flex: 1; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.round-pill { font-size: 11px; color: var(--text-1); padding: 3px 10px; border: 1px solid var(--border-1); border-radius: 20px; white-space: nowrap; }
-.messages { flex: 1; overflow-y: auto; padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; scrollbar-width: thin; }
-.round-divider { display: flex; align-items: center; gap: 10px; margin: 4px 0 2px; }
-.round-divider::before, .round-divider::after { content: ''; flex: 1; height: 1px; background: var(--border-0); }
-.round-divider span { font-size: 10px; color: var(--text-3); letter-spacing: 0.08em; text-transform: uppercase; }
-.message { display: flex; gap: 11px; animation: fadeUp 0.28s ease; }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
-.msg-body { flex: 1; min-width: 0; }
-.msg-header { display: flex; align-items: baseline; gap: 7px; margin-bottom: 5px; }
-.msg-name { font-size: 13px; font-weight: 600; }
-.msg-role { font-size: 11px; color: var(--text-3); }
-.msg-text { font-size: 14px; line-height: 1.68; color: var(--text-0); word-break: break-word; white-space: pre-wrap; }
-.msg-text.is-error { color: #f87171; font-size: 12px; font-style: italic; }
-.typing-dots { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
-.typing-dots span { width: 5px; height: 5px; border-radius: 50%; background: var(--text-3); animation: tdot 1.2s infinite; }
-.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes tdot { 0%,60%,100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-5px); opacity: 1; } }
-.status-bar { padding: 9px 20px; border-top: 1px solid var(--border-0); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; font-size: 12px; color: var(--text-3); }
-.status-left { display: flex; align-items: center; gap: 7px; }
-.status-led { width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); transition: background 0.3s; }
-.status-led.on { background: var(--c-gpt); animation: pulse 1s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
-.empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: var(--text-3); padding: 40px; }
-.empty-icon { display: flex; gap: 8px; margin-bottom: 4px; }
-.empty-pip { width: 10px; height: 10px; border-radius: 50%; opacity: 0.3; animation: pulse 2s infinite; }
-.empty-pip:nth-child(2) { animation-delay: 0.3s; }
-.empty-pip:nth-child(3) { animation-delay: 0.6s; }
-.empty-pip:nth-child(4) { animation-delay: 0.9s; }
-.empty-state p { font-size: 13px; text-align: center; line-height: 1.7; max-width: 300px; }
-.stop-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 999; align-items: center; justify-content: center; }
-.stop-overlay.show { display: flex; }
-.stop-modal { background: var(--bg-2); border: 1px solid var(--border-1); border-radius: 12px; padding: 28px 36px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
-.stop-modal-dots { display: flex; gap: 6px; }
-.stop-modal-dots span { width: 7px; height: 7px; border-radius: 50%; background: #f87171; animation: tdot 1.2s infinite; }
-.stop-modal-dots span:nth-child(2) { animation-delay: 0.2s; }
-.stop-modal-dots span:nth-child(3) { animation-delay: 0.4s; }
-.stop-modal-text { font-size: 14px; color: var(--text-1); }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Debate Arena</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-0: #09090c;
+      --bg-1: #101014;
+      --bg-2: #16161c;
+      --bg-3: #1e1e26;
+      --border-0: rgba(255, 255, 255, 0.06);
+      --border-1: rgba(255, 255, 255, 0.11);
+      --text-0: #eeeef2;
+      --text-1: #9090a4;
+      --text-2: #7e7e90;
+      --text-3: #55555f;
+      --c-claude: #a78bfa;
+      --c-gpt: #34d399;
+      --c-gemini: #60a5fa;
+      --c-devil: #f87171;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-0);
+      color: var(--text-0);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 20px;
+      border-bottom: 1px solid var(--border-0);
+      flex-shrink: 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .logo-pips {
+      display: flex;
+      gap: 4px;
+    }
+
+    .pip {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    .header-right {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .proxy-badge {
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      border: 1px solid var(--border-1);
+      color: var(--text-3);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+
+    .proxy-badge.ok {
+      color: #34d399;
+      border-color: rgba(52, 211, 153, 0.3);
+    }
+
+    .proxy-badge.err {
+      color: #f87171;
+      border-color: rgba(248, 113, 113, 0.3);
+    }
+
+    .proxy-led {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    button {
+      cursor: pointer;
+      border: 1px solid var(--border-1);
+      background: transparent;
+      color: var(--text-0);
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: background 0.14s;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      background: var(--bg-3);
+    }
+
+    button.primary {
+      background: var(--c-claude);
+      border-color: transparent;
+      color: #1a1030;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 8px 0;
+      width: 100%;
+      margin-top: 4px;
+      border-radius: 7px;
+    }
+
+    button.primary:hover {
+      opacity: 0.88;
+    }
+
+    button.primary:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    button.ghost {
+      border-color: transparent;
+      color: var(--text-1);
+    }
+
+    button.ghost:hover {
+      background: var(--bg-2);
+    }
+
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .guide-panel {
+      width: 260px;
+      border-left: 1px solid var(--border-0);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--bg-3) transparent;
+    }
+
+    .guide-panel::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .guide-panel::-webkit-scrollbar-thumb {
+      background: var(--bg-3);
+      border-radius: 2px;
+    }
+
+    .guide-section {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-0);
+    }
+
+    .guide-section h3 {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin-bottom: 11px;
+    }
+
+    .step {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .step:last-child {
+      margin-bottom: 0;
+    }
+
+    .step-num {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--bg-3);
+      border: 1px solid var(--border-1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-1);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .step-body {
+      flex: 1;
+    }
+
+    .step-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-0);
+      margin-bottom: 3px;
+      line-height: 1.4;
+    }
+
+    .step-desc {
+      font-size: 11px;
+      color: var(--text-2);
+      line-height: 1.6;
+    }
+
+    .step-desc code {
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      color: #34d399;
+      background: var(--bg-2);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    .guide-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      margin-bottom: 4px;
+    }
+
+    .badge-opt {
+      background: rgba(167, 139, 250, 0.12);
+      color: #a78bfa;
+      border: 1px solid rgba(167, 139, 250, 0.2);
+    }
+
+    .badge-req {
+      background: rgba(248, 113, 113, 0.12);
+      color: #f87171;
+      border: 1px solid rgba(248, 113, 113, 0.2);
+    }
+
+    .guide-tip {
+      font-size: 11px;
+      color: var(--text-2);
+      line-height: 1.6;
+      padding: 8px 10px;
+      background: var(--bg-2);
+      border-radius: 6px;
+      border-left: 2px solid var(--border-1);
+      margin-top: 8px;
+    }
+
+    .guide-tip b {
+      color: var(--text-1);
+      font-weight: 500;
+    }
+
+    .key-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+    }
+
+    .key-table td {
+      font-size: 10px;
+      padding: 4px 0;
+      vertical-align: top;
+      line-height: 1.5;
+    }
+
+    .key-table td:first-child {
+      color: var(--text-2);
+      width: 52px;
+      flex-shrink: 0;
+    }
+
+    .key-table td:last-child {
+      color: var(--text-1);
+    }
+
+    .key-table td code {
+      font-family: 'Courier New', monospace;
+      font-size: 9px;
+      color: #34d399;
+    }
+
+    .sidebar {
+      width: 272px;
+      border-right: 1px solid var(--border-0);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+      scrollbar-width: thin;
+    }
+
+    .sidebar-section {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-0);
+    }
+
+    .sidebar-section h3 {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin-bottom: 11px;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-1);
+      margin-bottom: 4px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      background: var(--bg-2);
+      border: 1px solid var(--border-1);
+      border-radius: 6px;
+      color: var(--text-0);
+      font-size: 12px;
+      padding: 7px 9px;
+      font-family: inherit;
+      margin-bottom: 8px;
+      outline: none;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: rgba(167, 139, 250, 0.4);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 66px;
+      line-height: 1.5;
+    }
+
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 9px center;
+    }
+
+    input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+      accent-color: var(--c-claude);
+      flex-shrink: 0;
+    }
+
+    .model-block {
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-0);
+    }
+
+    .model-block:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .model-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 5px;
+    }
+
+    .model-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .model-row label {
+      margin: 0;
+      font-size: 12px;
+      color: var(--text-0);
+      cursor: pointer;
+      flex: 1;
+      font-weight: 500;
+    }
+
+    .model-persona {
+      font-size: 10px;
+      color: var(--text-2);
+      padding-left: 14px;
+      margin-bottom: 5px;
+      line-height: 1.4;
+    }
+
+    .key-input-wrap {
+      position: relative;
+    }
+
+    .key-input-wrap input {
+      padding-right: 28px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+    }
+
+    .key-status {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-70%);
+      font-size: 11px;
+      color: #34d399;
+    }
+
+    .note {
+      font-size: 10px;
+      color: var(--text-2);
+      padding-left: 14px;
+      margin-bottom: 5px;
+      font-style: italic;
+    }
+
+    .proxy-info {
+      background: var(--bg-2);
+      border: 1px solid var(--border-1);
+      border-radius: 7px;
+      padding: 10px 11px;
+      margin-bottom: 8px;
+    }
+
+    .proxy-info code {
+      display: block;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #34d399;
+      margin: 3px 0 1px;
+    }
+
+    .proxy-info p {
+      font-size: 10px;
+      color: var(--text-2);
+      line-height: 1.5;
+      margin-top: 5px;
+    }
+
+    .debate-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .topic-bar {
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--border-0);
+      display: none;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      background: var(--bg-1);
+    }
+
+    .topic-text {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .round-pill {
+      font-size: 11px;
+      color: var(--text-1);
+      padding: 3px 10px;
+      border: 1px solid var(--border-1);
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scrollbar-width: thin;
+    }
+
+    .round-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 4px 0 2px;
+    }
+
+    .round-divider::before,
+    .round-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-0);
+    }
+
+    .round-divider span {
+      font-size: 10px;
+      color: var(--text-3);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .message {
+      display: flex;
+      gap: 11px;
+      animation: fadeUp 0.28s ease;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .msg-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .msg-header {
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+      margin-bottom: 5px;
+    }
+
+    .msg-name {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .msg-role {
+      font-size: 11px;
+      color: var(--text-3);
+    }
+
+    .msg-text {
+      font-size: 14px;
+      line-height: 1.68;
+      color: var(--text-0);
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .msg-text.is-error {
+      color: #f87171;
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    .typing-dots {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 4px 0;
+    }
+
+    .typing-dots span {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--text-3);
+      animation: tdot 1.2s infinite;
+    }
+
+    .typing-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes tdot {
+
+      0%,
+      60%,
+      100% {
+        transform: translateY(0);
+        opacity: 0.4;
+      }
+
+      30% {
+        transform: translateY(-5px);
+        opacity: 1;
+      }
+    }
+
+    .status-bar {
+      padding: 9px 20px;
+      border-top: 1px solid var(--border-0);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      font-size: 12px;
+      color: var(--text-3);
+    }
+
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .status-led {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-3);
+      transition: background 0.3s;
+    }
+
+    .status-led.on {
+      background: var(--c-gpt);
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0.45
+      }
+    }
+
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      color: var(--text-3);
+      padding: 40px;
+    }
+
+    .empty-icon {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .empty-pip {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      opacity: 0.3;
+      animation: pulse 2s infinite;
+    }
+
+    .empty-pip:nth-child(2) {
+      animation-delay: 0.3s;
+    }
+
+    .empty-pip:nth-child(3) {
+      animation-delay: 0.6s;
+    }
+
+    .empty-pip:nth-child(4) {
+      animation-delay: 0.9s;
+    }
+
+    .empty-state p {
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.7;
+      max-width: 300px;
+    }
+
+    .stop-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stop-overlay.show {
+      display: flex;
+    }
+
+    .stop-modal {
+      background: var(--bg-2);
+      border: 1px solid var(--border-1);
+      border-radius: 12px;
+      padding: 28px 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .stop-modal-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .stop-modal-dots span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #f87171;
+      animation: tdot 1.2s infinite;
+    }
+
+    .stop-modal-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .stop-modal-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    .stop-modal-text {
+      font-size: 14px;
+      color: var(--text-1);
+    }
+  </style>
 </head>
+
 <body>
-<div class="stop-overlay" id="stop-overlay">
-  <div class="stop-modal">
-    <div class="stop-modal-dots"><span></span><span></span><span></span></div>
-    <div class="stop-modal-text">토론을 중지하는 중...</div>
+  <div class="stop-overlay" id="stop-overlay">
+    <div class="stop-modal">
+      <div class="stop-modal-dots"><span></span><span></span><span></span></div>
+      <div class="stop-modal-text">토론을 중지하는 중...</div>
+    </div>
   </div>
-</div>
-<header>
-  <div class="logo">
-    <div class="logo-pips">
-      <div class="pip" style="background:var(--c-claude)"></div>
-      <div class="pip" style="background:var(--c-gpt)"></div>
-      <div class="pip" style="background:var(--c-gemini)"></div>
-      <div class="pip" style="background:var(--c-devil)"></div>
-    </div>
-    <span id="logo-title">AI Collaboration</span>
-  </div>
-  <div class="header-right">
-    <div style="display:flex;border:1px solid var(--border-1);border-radius:7px;overflow:hidden;font-size:12px">
-      <button id="mode-debate-btn" onclick="setMode('debate')" style="border:none;border-radius:0;padding:5px 12px;background:var(--c-claude);color:#1a1030;font-weight:600">⚔ 토론</button>
-      <button id="mode-collab-btn" onclick="setMode('collab')" style="border:none;border-radius:0;padding:5px 12px;background:transparent;color:var(--text-1)">🤝 협업</button>
-    </div>
-    <div class="proxy-badge" id="proxy-badge" onclick="checkProxy()" title="클릭하여 재확인">
-      <div class="proxy-led"></div>
-      <span id="proxy-badge-txt">프록시 확인 중...</span>
-    </div>
-    <button class="ghost" onclick="clearDebate()">초기화</button>
-  </div>
-</header>
-
-<div class="main">
-  <div class="sidebar">
-
-    <div class="sidebar-section">
-      <h3 id="setting-title">토론 설정</h3>
-      <label id="topic-label">주제</label>
-      <textarea id="topic-input" placeholder="예: AGI는 인류에게 축복인가, 재앙인가?"></textarea>
-      <label>라운드 수</label>
-      <select id="rounds-select">
-        <option value="2">2 라운드</option>
-        <option value="3" selected>3 라운드</option>
-        <option value="4">4 라운드</option>
-        <option value="5">5 라운드</option>
-      </select>
-      <button class="primary" id="start-btn" onclick="startDebate()">▶ 토론 시작</button>
-      <button id="stop-btn" onclick="stopDebate()" style="display:none;width:100%;margin-top:6px;border-radius:7px;padding:8px 0;font-size:13px;color:#f87171;border-color:rgba(248,113,113,0.35);">■ 중단</button>
-    </div>
-
-    <div class="sidebar-section">
-      <h3>프록시 서버</h3>
-      <div class="proxy-info">
-        <code>node proxy-server.js</code>
-        <p>OpenAI · Gemini CORS 우회용<br>별도 터미널에서 실행하세요</p>
+  <header>
+    <div class="logo">
+      <div class="logo-pips">
+        <div class="pip" style="background:var(--c-claude)"></div>
+        <div class="pip" style="background:var(--c-gpt)"></div>
+        <div class="pip" style="background:var(--c-gemini)"></div>
+        <div class="pip" style="background:var(--c-devil)"></div>
       </div>
-      <label>프록시 포트</label>
-      <input type="number" id="proxy-port" value="3131" min="1000" max="65535">
+      <span id="logo-title">AI Debate Arena</span>
     </div>
-
-    <div class="sidebar-section">
-      <h3>참여자 & API 키</h3>
-
-      <!-- 분석가 -->
-      <div class="model-block">
-        <div class="model-row">
-          <div class="model-dot" style="background:var(--c-claude)"></div>
-          <input type="checkbox" id="en-claude" checked>
-          <label for="en-claude" id="role-claude" style="color:var(--c-claude)">분석가 · Claude</label>
-        </div>
-        <div class="model-persona" id="persona-claude">논리·데이터 중심. 체계적 분석.</div>
-        <div class="key-input-wrap">
-          <input type="password" id="key-claude" placeholder="Anthropic API 키 (sk-ant-...)" autocomplete="off" oninput="ks('claude',this.value)">
-          <span class="key-status" id="ks-claude"></span>
-        </div>
+    <div class="header-right">
+      <div style="display:flex;border:1px solid var(--border-1);border-radius:7px;overflow:hidden;font-size:12px">
+        <button id="mode-debate-btn" onclick="setMode('debate')"
+          style="border:none;border-radius:0;padding:5px 12px;background:var(--c-claude);color:#1a1030;font-weight:600">⚔
+          토론</button>
+        <button id="mode-collab-btn" onclick="setMode('collab')"
+          style="border:none;border-radius:0;padding:5px 12px;background:transparent;color:var(--text-1)">🤝 협업</button>
       </div>
+      <div class="proxy-badge" id="proxy-badge" onclick="checkProxy()" title="클릭하여 재확인">
+        <div class="proxy-led"></div>
+        <span id="proxy-badge-txt">프록시 확인 중...</span>
+      </div>
+      <button class="ghost" onclick="clearDebate()">초기화</button>
+    </div>
+  </header>
 
-      <!-- 비전가 -->
-      <div class="model-block">
-        <div class="model-row">
-          <div class="model-dot" id="dot-slot1" style="background:#34d399"></div>
-          <input type="checkbox" id="en-gpt" checked>
-          <label id="label-slot1" style="color:#34d399">비전가</label>
-        </div>
-        <div class="model-persona" id="persona-slot1">창의적·미래지향. 새로운 가능성 제시.</div>
-        <select id="model-select-slot1" onchange="onModelSelect('slot1')">
-          <option value="gpt">GPT-4o (OpenAI)</option>
-          <option value="gemini">Gemini (Google)</option>
-          <option value="claude">Claude (Anthropic)</option>
+  <div class="main">
+    <div class="sidebar">
+
+      <div class="sidebar-section">
+        <h3 id="setting-title">토론 설정</h3>
+        <label id="topic-label">주제</label>
+        <textarea id="topic-input" placeholder="예: AGI는 인류에게 축복인가, 재앙인가?"></textarea>
+        <label>라운드 수</label>
+        <select id="rounds-select">
+          <option value="2">2 라운드</option>
+          <option value="3" selected>3 라운드</option>
+          <option value="4">4 라운드</option>
+          <option value="5">5 라운드</option>
         </select>
-        <div id="key-area-slot1"></div>
+        <button class="primary" id="start-btn" onclick="startDebate()">▶ 토론 시작</button>
+        <button id="stop-btn" onclick="stopDebate()"
+          style="display:none;width:100%;margin-top:6px;border-radius:7px;padding:8px 0;font-size:13px;color:#f87171;border-color:rgba(248,113,113,0.35);">■
+          중단</button>
       </div>
 
-      <!-- 현실주의자 -->
-      <div class="model-block">
-        <div class="model-row">
-          <div class="model-dot" id="dot-slot2" style="background:#60a5fa"></div>
-          <input type="checkbox" id="en-gemini" checked>
-          <label id="label-slot2" style="color:#60a5fa">현실주의자</label>
+      <div class="sidebar-section" id="proxy-section">
+        <div class="proxy-info">
+          <code>node proxy-server.js</code>
+          <p>OpenAI · Gemini CORS 우회용<br>별도 터미널에서 실행하세요</p>
         </div>
-        <div class="model-persona" id="persona-slot2">실용·구체적. 실현 가능성 중심.</div>
-        <select id="model-select-slot2" onchange="onModelSelect('slot2')">
-          <option value="gemini">Gemini (Google)</option>
-          <option value="gpt">GPT-4o (OpenAI)</option>
-          <option value="claude">Claude (Anthropic)</option>
-        </select>
-        <div id="key-area-slot2"></div>
+        <label>프록시 포트</label>
+        <input type="number" id="proxy-port" value="3131" min="1000" max="65535">
       </div>
 
-      <!-- 악마의 변호인 -->
-      <div class="model-block">
-        <div class="model-row">
-          <div class="model-dot" style="background:var(--c-devil)"></div>
-          <input type="checkbox" id="en-devil" checked>
-          <label id="role-devil" style="color:var(--c-devil)">악마의 변호인 · Claude</label>
+      <div class="sidebar-section">
+        <h3>참여자 & API 키</h3>
+
+        <!-- 분석가 -->
+        <div class="model-block">
+          <div class="model-row">
+            <div class="model-dot" style="background:var(--c-claude)"></div>
+            <input type="checkbox" id="en-claude" checked>
+            <label for="en-claude" id="role-claude" style="color:var(--c-claude)">분석가 · Claude</label>
+          </div>
+          <div class="model-persona" id="persona-claude">논리·데이터 중심. 체계적 분석.</div>
+          <div class="key-input-wrap">
+            <input type="password" id="key-claude" placeholder="Anthropic API 키 (sk-ant-...)" autocomplete="off"
+              oninput="ks('claude',this.value)">
+            <span class="key-status" id="ks-claude"></span>
+          </div>
         </div>
-        <div class="model-persona" id="persona-devil">항상 반론. 허점 공격. 도발적.</div>
-        <div class="note">↑ 분석가와 동일 Claude 키 사용</div>
-      </div>
 
-      <div class="note" style="margin-top:6px">키는 브라우저에 자동 저장됩니다 <span onclick="clearKeys()" style="color:#f87171;cursor:pointer;text-decoration:underline">삭제</span></div>
+        <!-- 비전가 -->
+        <div class="model-block">
+          <div class="model-row">
+            <div class="model-dot" id="dot-slot1" style="background:#34d399"></div>
+            <input type="checkbox" id="en-gpt" checked>
+            <label id="label-slot1" style="color:#34d399">비전가</label>
+          </div>
+          <div class="model-persona" id="persona-slot1">창의적·미래지향. 새로운 가능성 제시.</div>
+          <select id="model-select-slot1" onchange="onModelSelect('slot1')">
+            <option value="gpt">GPT-4o (OpenAI)</option>
+            <option value="gemini">Gemini (Google)</option>
+            <option value="claude">Claude (Anthropic)</option>
+          </select>
+          <div id="key-area-slot1"></div>
+        </div>
+
+        <!-- 현실주의자 -->
+        <div class="model-block">
+          <div class="model-row">
+            <div class="model-dot" id="dot-slot2" style="background:#60a5fa"></div>
+            <input type="checkbox" id="en-gemini" checked>
+            <label id="label-slot2" style="color:#60a5fa">현실주의자</label>
+          </div>
+          <div class="model-persona" id="persona-slot2">실용·구체적. 실현 가능성 중심.</div>
+          <select id="model-select-slot2" onchange="onModelSelect('slot2')">
+            <option value="gemini">Gemini (Google)</option>
+            <option value="gpt">GPT-4o (OpenAI)</option>
+            <option value="claude">Claude (Anthropic)</option>
+          </select>
+          <div id="key-area-slot2"></div>
+        </div>
+
+        <!-- 악마의 변호인 -->
+        <div class="model-block">
+          <div class="model-row">
+            <div class="model-dot" style="background:var(--c-devil)"></div>
+            <input type="checkbox" id="en-devil" checked>
+            <label id="role-devil" style="color:var(--c-devil)">악마의 변호인 · Claude</label>
+          </div>
+          <div class="model-persona" id="persona-devil">항상 반론. 허점 공격. 도발적.</div>
+          <div class="note">↑ 분석가와 동일 Claude 키 사용</div>
+        </div>
+
+        <div class="note" style="margin-top:6px">키는 브라우저에 자동 저장됩니다 <span onclick="clearKeys()"
+            style="color:#f87171;cursor:pointer;text-decoration:underline">삭제</span></div>
+      </div>
     </div>
+
+    <div class="debate-area">
+      <div class="topic-bar" id="topic-bar">
+        <span class="topic-text" id="topic-display"></span>
+        <span class="round-pill" id="round-display">준비 중</span>
+      </div>
+
+      <div class="messages" id="messages">
+        <div class="empty-state" id="empty-state">
+          <div class="empty-icon">
+            <div class="empty-pip" style="background:var(--c-claude)"></div>
+            <div class="empty-pip" style="background:var(--c-gpt)"></div>
+            <div class="empty-pip" style="background:var(--c-gemini)"></div>
+            <div class="empty-pip" style="background:var(--c-devil)"></div>
+          </div>
+          <p>① <code
+              style="font-size:12px;color:#34d399;font-family:'Courier New',monospace">node proxy-server.js</code>
+            실행<br>② API 키 입력 후 토론 시작<br><br><span style="font-size:11px;color:var(--text-2)">Claude만 사용 시 프록시 불필요</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="status-bar">
+        <div class="status-left">
+          <div class="status-led" id="status-led"></div>
+          <span id="status-msg">대기 중</span>
+        </div>
+        <span id="progress-txt" style="font-size:11px;"></span>
+      </div>
+    </div>
+
+    <!-- ── Guide Panel ── -->
+    <div class="guide-panel">
+
+      <div class="guide-section">
+        <h3>시작하기</h3>
+
+        <div class="step">
+          <div class="step-num">·</div>
+          <div class="step-body">
+            <div class="step-title">사전 조건 — Node.js</div>
+            <div class="step-desc">
+              <a href="https://nodejs.org" style="color:#60a5fa;text-decoration:none">nodejs.org</a> 에서 LTS 버전 설치.<br>
+              설치 확인: <code>node -v</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">파일 준비</div>
+            <div class="step-desc">
+              아래 두 파일을 다운로드하세요.<br>
+              <code>ai-debate-arena.html</code><br>
+              <code>proxy-server.js</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">프록시 서버 실행</div>
+            <div class="step-desc">
+              터미널에서 proxy-server.js 위치로 이동 후:<br>
+              <code>node proxy-server.js</code><br>
+              상단 <span style="color:#34d399">✓ 프록시 연결됨</span> 뱃지 확인
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">HTML 파일 열기</div>
+            <div class="step-desc">
+              <code>ai-debate-arena.html</code> 을<br>브라우저에서 직접 열기
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">API 키 입력 후 시작</div>
+            <div class="step-desc">왼쪽 패널에 키 입력 → 주제 작성 → 토론 시작</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="guide-section">
+        <h3>API 키 발급</h3>
+        <div class="guide-tip" style="margin-bottom:10px">
+          <b>⚠️ 모든 API는 유료</b><br>
+          각 서비스에 결제 수단 등록 후 크레딧 충전이 필요해요. 단, 토론 1회 비용은 매우 저렴해요 (수십 원 수준).
+        </div>
+        <table class="key-table">
+          <tr>
+            <td>Claude</td>
+            <td><a href="https://console.anthropic.com"
+                style="color:#60a5fa;text-decoration:none">console.anthropic.com</a><br>→ API Keys (신규 시 무료 크레딧
+              제공)<br><code>sk-ant-...</code></td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding:4px 0">
+              <hr style="border:none;border-top:1px solid var(--border-0)">
+            </td>
+          </tr>
+          <tr>
+            <td>GPT-4o</td>
+            <td><a href="https://platform.openai.com/api-keys"
+                style="color:#60a5fa;text-decoration:none">platform.openai.com</a><br>→ Billing에서 크레딧 충전
+              필요<br><code>sk-proj-...</code></td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding:4px 0">
+              <hr style="border:none;border-top:1px solid var(--border-0)">
+            </td>
+          </tr>
+          <tr>
+            <td>Gemini</td>
+            <td><a href="https://aistudio.google.com"
+                style="color:#60a5fa;text-decoration:none">aistudio.google.com</a><br>→ API 키 목록 → 결제 설정 클릭<br>→ Google
+              Cloud 결제 계정 연결<br><code>AIzaSy...</code></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="guide-section">
+        <h3>모델 선택 가이드</h3>
+        <div class="step-desc" style="font-size:11px;line-height:1.7;color:var(--text-2)">
+          비전가·현실주의자 슬롯은 드롭다운으로 모델 변경 가능.<br><br>
+          <b style="color:var(--text-1)">Claude만 사용</b> 시 — 프록시 불필요, API 키 1개로 4명 모두 운영.<br><br>
+          <b style="color:var(--text-1)">GPT-4o / Gemini</b> 사용 시 — 프록시 서버 필수, 각각 별도 API 키 필요.
+        </div>
+        <div class="guide-tip">
+          <b>💡 추천 시작 방법</b><br>
+          비전가·현실주의자 슬롯을 모두 <b>Claude</b>로 설정. Claude 키 하나만으로 4명이 토론.
+        </div>
+      </div>
+
+      <div class="guide-section">
+        <h3>자주 묻는 오류</h3>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div>
+            <div style="font-size:11px;font-weight:500;color:#f87171;margin-bottom:3px">Failed to fetch</div>
+            <div class="step-desc">프록시 서버가 실행되지 않았거나 포트가 다름. <code>node proxy-server.js</code> 재실행.</div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:500;color:#f87171;margin-bottom:3px">quota exceeded</div>
+            <div class="step-desc">API 크레딧 소진 또는 무료 한도 초과. 해당 서비스 결제 페이지에서 충전.</div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:500;color:#f87171;margin-bottom:3px">API key not valid</div>
+            <div class="step-desc">키 앞뒤 공백 확인 후 재입력. 새로 발급한 키는 1~2분 후 활성화.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
   </div>
 
-  <div class="debate-area">
-    <div class="topic-bar" id="topic-bar">
-      <span class="topic-text" id="topic-display"></span>
-      <span class="round-pill" id="round-display">준비 중</span>
-    </div>
+  <script>
+    const MODELS = [
+      {
+        id: 'claude', name: 'Claude', role: '분석가', company: 'Anthropic', apiModel: 'claude-sonnet-4-20250514', color: '#a78bfa', bg: 'rgba(167,139,250,0.13)', initials: 'CL', apiType: 'anthropic',
+        persona: '당신은 AI 토론의 "분석가"입니다. 논리적이고 체계적. 데이터·근거 중심으로 주장합니다.\n규칙: 반드시 한국어로 답변. 다른 참여자 발언을 직접 인용하거나 참조하며 반응. 3~4문장으로 간결하게. 자신의 역할명/모델명 언급 금지.'
+      },
+      {
+        id: 'gpt', name: 'GPT-4o', role: '비전가', company: 'OpenAI', apiModel: 'gpt-4o', color: '#34d399', bg: 'rgba(52,211,153,0.13)', initials: 'GP', apiType: 'openai',
+        persona: '당신은 AI 토론의 "비전가"입니다. 창의적이고 미래지향적. 다른 참여자들이 놓친 가능성을 제시합니다.\n규칙: 반드시 한국어로 답변. 이전 발언을 직접 참조하며 토론 발전. 3~4문장으로 간결하게. 자신의 역할명/모델명 언급 금지.'
+      },
+      {
+        id: 'gemini', name: 'Gemini', role: '현실주의자', company: 'Google', apiModel: 'gemini-2.5-flash', color: '#60a5fa', bg: 'rgba(96,165,250,0.13)', initials: 'GM', apiType: 'gemini',
+        persona: '당신은 AI 토론의 "현실주의자"입니다. 실용적이고 현실적. 구체적 사례와 실현 가능성에 집중합니다.\n규칙: 반드시 한국어로 답변. 이전 발언을 직접 참조하며 토론 발전. 3~4문장으로 간결하게. 자신의 역할명/모델명 언급 금지.'
+      },
+      {
+        id: 'devil', name: 'Claude', role: '악마의 변호인', company: 'Anthropic', apiModel: 'claude-sonnet-4-20250514', color: '#f87171', bg: 'rgba(248,113,113,0.13)', initials: 'DV', apiType: 'anthropic',
+        persona: '당신은 AI 토론의 "악마의 변호인"입니다. 항상 반론. 다른 발언의 허점을 찾아 공격. 도발적이지만 논리적.\n규칙: 반드시 한국어로 답변. 다른 참여자 발언을 직접 인용하며 날카롭게 반박. 3~4문장으로 간결하게. 자신의 역할명/모델명 언급 금지. 항상 비판적·반대 입장 유지.'
+      }
+    ];
 
-    <div class="messages" id="messages">
-      <div class="empty-state" id="empty-state">
-        <div class="empty-icon">
-          <div class="empty-pip" style="background:var(--c-claude)"></div>
-          <div class="empty-pip" style="background:var(--c-gpt)"></div>
-          <div class="empty-pip" style="background:var(--c-gemini)"></div>
-          <div class="empty-pip" style="background:var(--c-devil)"></div>
-        </div>
-        <p>① <code style="font-size:12px;color:#34d399;font-family:'Courier New',monospace">node proxy-server.js</code> 실행<br>② API 키 입력 후 토론 시작<br><br><span style="font-size:11px;color:var(--text-2)">Claude만 사용 시 프록시 불필요</span></p>
-      </div>
-    </div>
+    const MODES = {
+      debate: {
+        title: 'AI Debate Arena',
+        settingTitle: '토론 설정',
+        topicLabel: '주제',
+        topicPlaceholder: '예: AGI는 인류에게 축복인가, 재앙인가?',
+        startBtn: '▶ 토론 시작',
+        roles: {
+          claude: { label: '분석가 · Claude', persona: '논리·데이터 중심. 체계적 분석.' },
+          slot1: { label: '비전가', persona: '창의적·미래지향. 새로운 가능성 제시.' },
+          slot2: { label: '현실주의자', persona: '실용·구체적. 실현 가능성 중심.' },
+          devil: { label: '악마의 변호인 · Claude', persona: '항상 반론. 허점 공격. 도발적.' },
+        },
+        personas: {
+          claude: '당신은 AI 토론의 "분석가"입니다. 논리적이고 체계적. 데이터·근거 중심으로 주장합니다.\n규칙: 반드시 한국어로 답변. 다른 참여자 발언을 직접 인용하거나 참조하며 반응. 3~4문장으로 간결하게. 자신의 역할명/모델명 언급 금지.',
+          gpt: '당신은 AI 토론의 "비전가"입니다. 창의적이고 미래지향적. 다른 참여자들이 놓친 가능성을 제시합니다.\n규칙: 반드시 한국어로 답변. 이전 발언을 직접 참조하며 토론 발전. 3~4문장으로 간결하게. 자신의 역할명/모델명 언급 금지.',
+          gemini: '당신은 AI 토론의 "현실주의자"입니다. 실용적이고 현실적. 구체적 사례와 실현 가능성에 집중합니다.\n규칙: 반드시 한국어로 답변. 이전 발언을 직접 참조하며 토론 발전. 3~4문장으로 간결하게. 자신의 역할명/모델명 언급 금지.',
+          devil: '당신은 AI 토론의 "악마의 변호인"입니다. 항상 반론. 다른 발언의 허점을 찾아 공격. 도발적이지만 논리적.\n규칙: 반드시 한국어로 답변. 다른 참여자 발언을 직접 인용하며 날카롭게 반박. 3~4문장으로 간결하게. 자신의 역할명/모델명 언급 금지. 항상 비판적·반대 입장 유지.',
+        },
+        buildPrompt: function (hist, topic) {
+          if (!hist.length) return '토론 주제: "' + topic + '"\n\n첫 번째 발언자로서 이 주제에 대한 당신의 초기 입장을 밝혀주세요.';
+          const recent = hist.slice(-6);
+          const lines = recent.map(h => '[' + h.name + ' (' + h.role + ')]: ' + h.text).join('\n\n');
+          return '토론 주제: "' + topic + '"\n\n─ 최근 토론 내용 ─\n' + lines + '\n\n─────────────────\n위 토론에 이어서, 다른 참여자들의 발언을 직접 인용하거나 참조하며 응답하세요.';
+        },
+        closingSystem: '당신은 AI 토론의 진행자입니다. 토론을 마무리하는 클로징 멘트를 작성하세요. 형식: ① 각 참여자의 핵심 주장을 1~2줄로 요약, ② 토론에서 드러난 핵심 쟁점 1~2가지, ③ 짧은 마무리 멘트. 전체 5~7문장. 자연스럽고 품격 있는 진행자 말투로.',
+        closingPrompt: (topic, summary) => '토론 주제: "' + topic + '"\n\n' + summary + '\n\n위 토론의 진행자 클로징 멘트를 작성해주세요.',
+        hostStart: (topic, rounds, names) => '토론 주제: "' + topic + '" — ' + rounds + ' 라운드, 참여자 ' + names.length + '명 (' + names.join(', ') + ')',
+        hostClosingPending: (rounds) => rounds + ' 라운드 토론 완료. 진행자가 요점을 정리합니다...',
+      },
+      collab: {
+        title: 'AI Collab Studio',
+        settingTitle: '협업 설정',
+        topicLabel: '해결할 문제',
+        topicPlaceholder: '예: 우리 서비스의 사용자 이탈률을 낮추려면 어떻게 해야 할까?',
+        startBtn: '▶ 논의 시작',
+        roles: {
+          claude: { label: '기획자 · Claude', persona: '요구사항 정리 및 우선순위 중심.' },
+          slot1: { label: '개발자', persona: '기술 구현 가능성 및 아키텍처 중심.' },
+          slot2: { label: '디자이너', persona: 'UX·사용자 경험 및 인터페이스 중심.' },
+          devil: { label: '비즈니스 전략가 · Claude', persona: '비용·수익·시장 관점에서 검토.' },
+        },
+        personas: {
+          claude: '당신은 협업 논의의 "기획자"입니다. 문제를 구조화하고 요구사항을 명확히 합니다.\n규칙: 반드시 한국어로 답변. 반드시 직전 발언자의 이름과 핵심 의견을 인용한 뒤, 그 위에 기획 관점을 더하세요. 예: "개발자가 제안한 ~방식을 기획 측면에서 구체화하면...". 3~4문장. 역할명/모델명 언급 금지. 반박 금지, 항상 의견을 발전시키세요.',
+          gpt: '당신은 협업 논의의 "개발자"입니다. 기술적 구현 가능성과 최적 아키텍처를 제안합니다.\n규칙: 반드시 한국어로 답변. 반드시 직전 발언자의 이름과 의견을 인용한 뒤, 기술적으로 어떻게 구현할 수 있는지 구체화하세요. 예: "기획자가 언급한 ~기능은 기술적으로 ~방식으로 구현 가능합니다". 3~4문장. 역할명/모델명 언급 금지. 반박 금지, 항상 의견을 발전시키세요.',
+          gemini: '당신은 협업 논의의 "디자이너"입니다. 사용자 경험과 인터페이스 관점에서 접근합니다.\n규칙: 반드시 한국어로 답변. 반드시 직전 발언자의 이름과 의견을 인용한 뒤, UX/UI 관점에서 어떻게 사용자에게 전달할지 구체화하세요. 예: "개발자가 제안한 ~구조를 사용자 입장에서 보면...". 3~4문장. 역할명/모델명 언급 금지. 반박 금지, 항상 의견을 발전시키세요.',
+          devil: '당신은 협업 논의의 "비즈니스 전략가"입니다. 비용, 수익성, 시장 관점에서 현실을 검토합니다.\n규칙: 반드시 한국어로 답변. 반드시 앞선 발언들을 종합적으로 인용한 뒤, 비즈니스 실현 가능성과 우선순위를 제시하세요. 예: "기획자의 ~방향과 개발자의 ~제안을 비즈니스 관점에서 보면, 가장 먼저 ~를 해야 합니다". 3~4문장. 역할명/모델명 언급 금지. 반박이 아닌 현실적 우선순위 제안을 하세요.',
+        },
+        buildPrompt: function (hist, topic) {
+          if (!hist.length) return '해결할 문제: "' + topic + '"\n\n첫 번째 전문가로서 이 문제를 당신의 전문 분야 관점에서 분석하고 초기 접근 방향을 제시해주세요.';
+          const recent = hist.slice(-6);
+          const lines = recent.map(h => '[' + h.name + ' (' + h.role + ')]: ' + h.text).join('\n\n');
+          const last = recent[recent.length - 1];
+          return '해결할 문제: "' + topic + '"\n\n─ 지금까지의 논의 ─\n' + lines + '\n\n─────────────────\n직전 발언자(' + last.name + ', ' + last.role + ')의 의견을 반드시 이름과 함께 인용하고, 그 위에 당신의 전문 분야 관점을 더해 해결책을 구체화하세요. 새로운 아이디어를 추가해도 좋지만, 반드시 앞선 논의와 연결해서 쌓아가는 방식으로 답변하세요.';
+        },
+        closingSystem: '당신은 협업 논의의 진행자입니다. 논의를 마무리하는 액션 아이템 정리를 작성하세요. 형식: ① 논의에서 합의된 핵심 방향 2~3가지, ② 각 전문가별 담당 액션 아이템, ③ 다음 단계 제안. 실용적이고 명확하게.',
+        closingPrompt: (topic, summary) => '해결할 문제: "' + topic + '"\n\n' + summary + '\n\n위 논의의 액션 아이템을 정리해주세요.',
+        hostStart: (topic, rounds, names) => '논의 주제: "' + topic + '" — ' + rounds + ' 라운드, 참여자 ' + names.length + '명 (' + names.join(', ') + ')',
+        hostClosingPending: (rounds) => rounds + ' 라운드 논의 완료. 진행자가 액션 아이템을 정리합니다...',
+      }
+    };
 
-    <div class="status-bar">
-      <div class="status-left">
-        <div class="status-led" id="status-led"></div>
-        <span id="status-msg">대기 중</span>
-      </div>
-      <span id="progress-txt" style="font-size:11px;"></span>
-    </div>
-  </div>
+    let currentMode = 'debate';
 
-  <!-- ── Guide Panel ── -->
-  <div class="guide-panel">
+    function setMode(mode) {
+      currentMode = mode;
+      const m = MODES[mode];
 
-    <div class="guide-section">
-      <h3>시작하기</h3>
+      // 헤더
+      $('logo-title').textContent = m.title;
+      $('mode-debate-btn').style.background = mode === 'debate' ? 'var(--c-claude)' : 'transparent';
+      $('mode-debate-btn').style.color = mode === 'debate' ? '#1a1030' : 'var(--text-1)';
+      $('mode-debate-btn').style.fontWeight = mode === 'debate' ? '600' : '400';
+      $('mode-collab-btn').style.background = mode === 'collab' ? '#34d399' : 'transparent';
+      $('mode-collab-btn').style.color = mode === 'collab' ? '#0a2a1f' : 'var(--text-1)';
+      $('mode-collab-btn').style.fontWeight = mode === 'collab' ? '600' : '400';
 
-      <div class="step">
-        <div class="step-num">·</div>
-        <div class="step-body">
-          <div class="step-title">사전 조건 — Node.js</div>
-          <div class="step-desc">
-            <a href="https://nodejs.org" style="color:#60a5fa;text-decoration:none">nodejs.org</a> 에서 LTS 버전 설치.<br>
-            설치 확인: <code>node -v</code>
-          </div>
-        </div>
-      </div>
+      // 설정 섹션
+      $('setting-title').textContent = m.settingTitle;
+      $('topic-label').textContent = m.topicLabel;
+      $('topic-input').placeholder = m.topicPlaceholder;
+      $('start-btn').textContent = m.startBtn;
 
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-body">
-          <div class="step-title">파일 준비</div>
-          <div class="step-desc">
-            아래 두 파일을 다운로드하세요.<br>
-            <code>ai-collaboration.html</code><br>
-            <code>proxy-server.js</code>
-          </div>
-        </div>
-      </div>
+      // 참여자 레이블
+      $('role-claude').textContent = m.roles.claude.label;
+      $('persona-claude').textContent = m.roles.claude.persona;
+      const slot1Label = $('label-slot1').textContent.split(' · ')[0] || '비전가';
+      const slot2Label = $('label-slot2').textContent.split(' · ')[0] || '현실주의자';
+      $('label-slot1').textContent = m.roles.slot1.label + ($('label-slot1').textContent.includes('·') ? ' · ' + $('label-slot1').textContent.split(' · ').slice(1).join(' · ') : '');
+      $('persona-slot1').textContent = m.roles.slot1.persona;
+      $('label-slot2').textContent = m.roles.slot2.label + ($('label-slot2').textContent.includes('·') ? ' · ' + $('label-slot2').textContent.split(' · ').slice(1).join(' · ') : '');
+      $('persona-slot2').textContent = m.roles.slot2.persona;
+      $('role-devil').textContent = m.roles.devil.label;
+      $('persona-devil').textContent = m.roles.devil.persona;
 
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-body">
-          <div class="step-title">프록시 서버 실행</div>
-          <div class="step-desc">
-            터미널에서 proxy-server.js 위치로 이동 후:<br>
-            <code>node proxy-server.js</code><br>
-            상단 <span style="color:#34d399">✓ 프록시 연결됨</span> 뱃지 확인
-          </div>
-        </div>
-      </div>
+      // 슬롯 레이블 재계산
+      onModelSelect('slot1');
+      onModelSelect('slot2');
 
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-body">
-          <div class="step-title">HTML 파일 열기</div>
-          <div class="step-desc">
-            <code>ai-collaboration.html</code> 을<br>브라우저에서 직접 열기
-          </div>
-        </div>
-      </div>
+      // MODELS 페르소나 + role 업데이트
+      const roleMap = {
+        debate: { claude: '분석가', gpt: '비전가', gemini: '현실주의자', devil: '악마의 변호인' },
+        collab: { claude: '기획자', gpt: '개발자', gemini: '디자이너', devil: '비즈니스 전략가' },
+      };
+      MODELS.forEach(x => {
+        x.persona = m.personas[x.id];
+        x.role = roleMap[mode][x.id];
+      });
 
-      <div class="step">
-        <div class="step-num">4</div>
-        <div class="step-body">
-          <div class="step-title">API 키 입력 후 시작</div>
-          <div class="step-desc">왼쪽 패널에 키 입력 → 주제 작성 → 토론 시작</div>
-        </div>
-      </div>
-    </div>
+      try { localStorage.setItem('debate_mode', mode); } catch (e) { }
+    }
 
-    <div class="guide-section">
-      <h3>API 키 발급</h3>
-      <div class="guide-tip" style="margin-bottom:10px">
-        <b>⚠️ 모든 API는 유료</b><br>
-        각 서비스에 결제 수단 등록 후 크레딧 충전이 필요해요. 단, 토론 1회 비용은 매우 저렴해요 (수십 원 수준).
-      </div>
-      <table class="key-table">
-        <tr>
-          <td>Claude</td>
-          <td><a href="https://console.anthropic.com" style="color:#60a5fa;text-decoration:none">console.anthropic.com</a><br>→ API Keys (신규 시 무료 크레딧 제공)<br><code>sk-ant-...</code></td>
-        </tr>
-        <tr><td colspan="2" style="padding:4px 0"><hr style="border:none;border-top:1px solid var(--border-0)"></td></tr>
-        <tr>
-          <td>GPT-4o</td>
-          <td><a href="https://platform.openai.com/api-keys" style="color:#60a5fa;text-decoration:none">platform.openai.com</a><br>→ Billing에서 크레딧 충전 필요<br><code>sk-proj-...</code></td>
-        </tr>
-        <tr><td colspan="2" style="padding:4px 0"><hr style="border:none;border-top:1px solid var(--border-0)"></td></tr>
-        <tr>
-          <td>Gemini</td>
-          <td><a href="https://aistudio.google.com" style="color:#60a5fa;text-decoration:none">aistudio.google.com</a><br>→ API 키 목록 → 결제 설정 클릭<br>→ Google Cloud 결제 계정 연결<br><code>AIzaSy...</code></td>
-        </tr>
-      </table>
-    </div>
+    const MODEL_META = {
+      claude: { color: '#a78bfa', company: 'Anthropic', apiType: 'anthropic', apiModel: 'claude-sonnet-4-20250514', placeholder: 'sk-ant-api03-...', keyId: 'claude', needProxy: false },
+      gpt: { color: '#34d399', company: 'OpenAI', apiType: 'openai', apiModel: 'gpt-4o', placeholder: 'sk-proj-...', keyId: 'gpt', needProxy: true },
+      gemini: { color: '#60a5fa', company: 'Google', apiType: 'gemini', apiModel: 'gemini-2.5-flash', placeholder: 'AIzaSy...', keyId: 'gemini', needProxy: true },
+    };
 
-    <div class="guide-section">
-      <h3>모델 선택 가이드</h3>
-      <div class="step-desc" style="font-size:11px;line-height:1.7;color:var(--text-2)">
-        비전가·현실주의자 슬롯은 드롭다운으로 모델 변경 가능.<br><br>
-        <b style="color:var(--text-1)">Claude만 사용</b> 시 — 프록시 불필요, API 키 1개로 4명 모두 운영.<br><br>
-        <b style="color:var(--text-1)">GPT-4o / Gemini</b> 사용 시 — 프록시 서버 필수, 각각 별도 API 키 필요.
-      </div>
-      <div class="guide-tip">
-        <b>💡 추천 시작 방법</b><br>
-        비전가·현실주의자 슬롯을 모두 <b>Claude</b>로 설정. Claude 키 하나만으로 4명이 토론.
-      </div>
-    </div>
+    const KEY_INFO = {
+      gpt: { placeholder: 'OpenAI API 키 (sk-proj-...)', keyId: 'key-gpt', ksId: 'ks-gpt', note: '프록시 서버 필요' },
+      gemini: { placeholder: 'Google API 키 (AIzaSy...)', keyId: 'key-gemini', ksId: 'ks-gemini', note: '프록시 서버 필요' },
+    };
 
-    <div class="guide-section">
-      <h3>자주 묻는 오류</h3>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div>
-          <div style="font-size:11px;font-weight:500;color:#f87171;margin-bottom:3px">Failed to fetch</div>
-          <div class="step-desc">프록시 서버가 실행되지 않았거나 포트가 다름. <code>node proxy-server.js</code> 재실행.</div>
-        </div>
-        <div>
-          <div style="font-size:11px;font-weight:500;color:#f87171;margin-bottom:3px">quota exceeded</div>
-          <div class="step-desc">API 크레딧 소진 또는 무료 한도 초과. 해당 서비스 결제 페이지에서 충전.</div>
-        </div>
-        <div>
-          <div style="font-size:11px;font-weight:500;color:#f87171;margin-bottom:3px">API key not valid</div>
-          <div class="step-desc">키 앞뒤 공백 확인 후 재입력. 새로 발급한 키는 1~2분 후 활성화.</div>
-        </div>
-      </div>
-    </div>
+    function onModelSelect(slot) {
+      const sel = document.getElementById('model-select-' + slot).value;
+      const roleLabel = slot === 'slot1' ? '비전가' : '현실주의자';
+      const slotColor = slot === 'slot1' ? '#34d399' : '#60a5fa';
+      const modelName = sel === 'gpt' ? 'GPT-4o' : sel === 'gemini' ? 'Gemini' : 'Claude';
 
-  </div>
+      document.getElementById('dot-' + slot).style.background = slotColor;
+      const lbl = document.getElementById('label-' + slot);
+      lbl.style.color = slotColor;
+      lbl.textContent = roleLabel + ' · ' + modelName;
 
-</div>
+      updateKeyAreas();
+      try { localStorage.setItem('debate_model_' + slot, sel); } catch (e) { }
+    }
 
-<script>
-const MODELS = [
-  { id:'claude', name:'Claude',  role:'분석가',      company:'Anthropic', apiModel:'claude-sonnet-4-20250514', color:'#a78bfa', bg:'rgba(167,139,250,0.13)', initials:'CL', apiType:'anthropic',
-    persona:'당신은 AI 토론의 "분석가"입니다. 논리적이고 체계적. 데이터·근거 중심으로 주장합니다.\n규칙: 반드시 한국어로 답변. 다른 참여자 발언을 직접 인용하거나 참조하며 반응. 3~4문장으로 간결하게. 자신의 역할명/모델명 언급 금지.' },
-  { id:'gpt',    name:'GPT-4o',  role:'비전가',      company:'OpenAI',    apiModel:'gpt-4o',                   color:'#34d399', bg:'rgba(52,211,153,0.13)',  initials:'GP', apiType:'openai',
-    persona:'당신은 AI 토론의 "비전가"입니다. 창의적이고 미래지향적. 다른 참여자들이 놓친 가능성을 제시합니다.\n규칙: 반드시 한국어로 답변. 이전 발언을 직접 참조하며 토론 발전. 3~4문장으로 간결하게. 자신의 역할명/모델명 언급 금지.' },
-  { id:'gemini', name:'Gemini',  role:'현실주의자',  company:'Google',    apiModel:'gemini-2.5-flash', color:'#60a5fa', bg:'rgba(96,165,250,0.13)',  initials:'GM', apiType:'gemini',
-    persona:'당신은 AI 토론의 "현실주의자"입니다. 실용적이고 현실적. 구체적 사례와 실현 가능성에 집중합니다.\n규칙: 반드시 한국어로 답변. 이전 발언을 직접 참조하며 토론 발전. 3~4문장으로 간결하게. 자신의 역할명/모델명 언급 금지.' },
-  { id:'devil',  name:'Claude',  role:'악마의 변호인', company:'Anthropic', apiModel:'claude-sonnet-4-20250514', color:'#f87171', bg:'rgba(248,113,113,0.13)', initials:'DV', apiType:'anthropic',
-    persona:'당신은 AI 토론의 "악마의 변호인"입니다. 항상 반론. 다른 발언의 허점을 찾아 공격. 도발적이지만 논리적.\n규칙: 반드시 한국어로 답변. 다른 참여자 발언을 직접 인용하며 날카롭게 반박. 3~4문장으로 간결하게. 자신의 역할명/모델명 언급 금지. 항상 비판적·반대 입장 유지.' }
-];
+    function updateKeyAreas() {
+      const sel1 = document.getElementById('model-select-slot1').value;
+      const sel2 = document.getElementById('model-select-slot2').value;
 
-const MODES = {
-  debate: {
-    title: 'AI Collaboration',
-    settingTitle: '토론 설정',
-    topicLabel: '주제',
-    topicPlaceholder: '예: AGI는 인류에게 축복인가, 재앙인가?',
-    startBtn: '▶ 토론 시작',
-    roles: {
-      claude: { label: '분석가 · Claude', persona: '논리·데이터 중심. 체계적 분석.' },
-      slot1:  { label: '비전가',          persona: '창의적·미래지향. 새로운 가능성 제시.' },
-      slot2:  { label: '현실주의자',      persona: '실용·구체적. 실현 가능성 중심.' },
-      devil:  { label: '악마의 변호인 · Claude', persona: '항상 반론. 허점 공격. 도발적.' },
-    },
-    personas: {
-      claude: '당신은 AI 토론의 "분석가"입니다. 논리적이고 체계적. 데이터·근거 중심으로 주장합니다.\n규칙: 반드시 한국어로 답변. 다른 참여자 발언을 직접 인용하거나 참조하며 반응. 3~4문장으로 간결하게. 자신의 역할명/모델명 언급 금지.',
-      gpt:    '당신은 AI 토론의 "비전가"입니다. 창의적이고 미래지향적. 다른 참여자들이 놓친 가능성을 제시합니다.\n규칙: 반드시 한국어로 답변. 이전 발언을 직접 참조하며 토론 발전. 3~4문장으로 간결하게. 자신의 역할명/모델명 언급 금지.',
-      gemini: '당신은 AI 토론의 "현실주의자"입니다. 실용적이고 현실적. 구체적 사례와 실현 가능성에 집중합니다.\n규칙: 반드시 한국어로 답변. 이전 발언을 직접 참조하며 토론 발전. 3~4문장으로 간결하게. 자신의 역할명/모델명 언급 금지.',
-      devil:  '당신은 AI 토론의 "악마의 변호인"입니다. 항상 반론. 다른 발언의 허점을 찾아 공격. 도발적이지만 논리적.\n규칙: 반드시 한국어로 답변. 다른 참여자 발언을 직접 인용하며 날카롭게 반박. 3~4문장으로 간결하게. 자신의 역할명/모델명 언급 금지. 항상 비판적·반대 입장 유지.',
-    },
-    buildPrompt: function(hist, topic) {
-      if (!hist.length) return '토론 주제: "'+topic+'"\n\n첫 번째 발언자로서 이 주제에 대한 당신의 초기 입장을 밝혀주세요.';
-      const recent = hist.slice(-6);
-      const lines = recent.map(h => '['+h.name+' ('+h.role+')]: '+h.text).join('\n\n');
-      return '토론 주제: "'+topic+'"\n\n─ 최근 토론 내용 ─\n'+lines+'\n\n─────────────────\n위 토론에 이어서, 다른 참여자들의 발언을 직접 인용하거나 참조하며 응답하세요.';
-    },
-    closingSystem: '당신은 AI 토론의 진행자입니다. 토론을 마무리하는 클로징 멘트를 작성하세요. 형식: ① 각 참여자의 핵심 주장을 1~2줄로 요약, ② 토론에서 드러난 핵심 쟁점 1~2가지, ③ 짧은 마무리 멘트. 전체 5~7문장. 자연스럽고 품격 있는 진행자 말투로.',
-    closingPrompt: (topic, summary) => '토론 주제: "'+topic+'"\n\n'+summary+'\n\n위 토론의 진행자 클로징 멘트를 작성해주세요.',
-    hostStart: (topic, rounds, names) => '토론 주제: "'+topic+'" — '+rounds+' 라운드, 참여자 '+names.length+'명 ('+names.join(', ')+')',
-    hostClosingPending: (rounds) => rounds+' 라운드 토론 완료. 진행자가 요점을 정리합니다...',
-  },
-  collab: {
-    title: 'AI Collab Studio',
-    settingTitle: '협업 설정',
-    topicLabel: '해결할 문제',
-    topicPlaceholder: '예: 우리 서비스의 사용자 이탈률을 낮추려면 어떻게 해야 할까?',
-    startBtn: '▶ 논의 시작',
-    roles: {
-      claude: { label: '기획자 · Claude',   persona: '요구사항 정리 및 우선순위 중심.' },
-      slot1:  { label: '개발자',             persona: '기술 구현 가능성 및 아키텍처 중심.' },
-      slot2:  { label: '디자이너',           persona: 'UX·사용자 경험 및 인터페이스 중심.' },
-      devil:  { label: '비즈니스 전략가 · Claude', persona: '비용·수익·시장 관점에서 검토.' },
-    },
-    personas: {
-      claude: '당신은 협업 논의의 "기획자"입니다. 문제를 구조화하고 요구사항을 명확히 합니다.\n규칙: 반드시 한국어로 답변. 반드시 직전 발언자의 이름과 핵심 의견을 인용한 뒤, 그 위에 기획 관점을 더하세요. 예: "개발자가 제안한 ~방식을 기획 측면에서 구체화하면...". 3~4문장. 역할명/모델명 언급 금지. 반박 금지, 항상 의견을 발전시키세요.',
-      gpt:    '당신은 협업 논의의 "개발자"입니다. 기술적 구현 가능성과 최적 아키텍처를 제안합니다.\n규칙: 반드시 한국어로 답변. 반드시 직전 발언자의 이름과 의견을 인용한 뒤, 기술적으로 어떻게 구현할 수 있는지 구체화하세요. 예: "기획자가 언급한 ~기능은 기술적으로 ~방식으로 구현 가능합니다". 3~4문장. 역할명/모델명 언급 금지. 반박 금지, 항상 의견을 발전시키세요.',
-      gemini: '당신은 협업 논의의 "디자이너"입니다. 사용자 경험과 인터페이스 관점에서 접근합니다.\n규칙: 반드시 한국어로 답변. 반드시 직전 발언자의 이름과 의견을 인용한 뒤, UX/UI 관점에서 어떻게 사용자에게 전달할지 구체화하세요. 예: "개발자가 제안한 ~구조를 사용자 입장에서 보면...". 3~4문장. 역할명/모델명 언급 금지. 반박 금지, 항상 의견을 발전시키세요.',
-      devil:  '당신은 협업 논의의 "비즈니스 전략가"입니다. 비용, 수익성, 시장 관점에서 현실을 검토합니다.\n규칙: 반드시 한국어로 답변. 반드시 앞선 발언들을 종합적으로 인용한 뒤, 비즈니스 실현 가능성과 우선순위를 제시하세요. 예: "기획자의 ~방향과 개발자의 ~제안을 비즈니스 관점에서 보면, 가장 먼저 ~를 해야 합니다". 3~4문장. 역할명/모델명 언급 금지. 반박이 아닌 현실적 우선순위 제안을 하세요.',
-    },
-    buildPrompt: function(hist, topic) {
-      if (!hist.length) return '해결할 문제: "'+topic+'"\n\n첫 번째 전문가로서 이 문제를 당신의 전문 분야 관점에서 분석하고 초기 접근 방향을 제시해주세요.';
-      const recent = hist.slice(-6);
-      const lines = recent.map(h => '['+h.name+' ('+h.role+')]: '+h.text).join('\n\n');
-      const last = recent[recent.length-1];
-      return '해결할 문제: "'+topic+'"\n\n─ 지금까지의 논의 ─\n'+lines+'\n\n─────────────────\n직전 발언자('+last.name+', '+last.role+')의 의견을 반드시 이름과 함께 인용하고, 그 위에 당신의 전문 분야 관점을 더해 해결책을 구체화하세요. 새로운 아이디어를 추가해도 좋지만, 반드시 앞선 논의와 연결해서 쌓아가는 방식으로 답변하세요.';
-    },
-    closingSystem: '당신은 협업 논의의 진행자입니다. 논의를 마무리하는 액션 아이템 정리를 작성하세요. 형식: ① 논의에서 합의된 핵심 방향 2~3가지, ② 각 전문가별 담당 액션 아이템, ③ 다음 단계 제안. 실용적이고 명확하게.',
-    closingPrompt: (topic, summary) => '해결할 문제: "'+topic+'"\n\n'+summary+'\n\n위 논의의 액션 아이템을 정리해주세요.',
-    hostStart: (topic, rounds, names) => '논의 주제: "'+topic+'" — '+rounds+' 라운드, 참여자 '+names.length+'명 ('+names.join(', ')+')',
-    hostClosingPending: (rounds) => rounds+' 라운드 논의 완료. 진행자가 액션 아이템을 정리합니다...',
-  }
-};
-
-let currentMode = 'debate';
-
-function setMode(mode) {
-  currentMode = mode;
-  const m = MODES[mode];
-
-  // 헤더
-  $('logo-title').textContent = m.title;
-  $('mode-debate-btn').style.background = mode === 'debate' ? 'var(--c-claude)' : 'transparent';
-  $('mode-debate-btn').style.color      = mode === 'debate' ? '#1a1030' : 'var(--text-1)';
-  $('mode-debate-btn').style.fontWeight = mode === 'debate' ? '600' : '400';
-  $('mode-collab-btn').style.background = mode === 'collab' ? '#34d399' : 'transparent';
-  $('mode-collab-btn').style.color      = mode === 'collab' ? '#0a2a1f' : 'var(--text-1)';
-  $('mode-collab-btn').style.fontWeight = mode === 'collab' ? '600' : '400';
-
-  // 설정 섹션
-  $('setting-title').textContent       = m.settingTitle;
-  $('topic-label').textContent         = m.topicLabel;
-  $('topic-input').placeholder         = m.topicPlaceholder;
-  $('start-btn').textContent           = m.startBtn;
-
-  // 참여자 레이블
-  $('role-claude').textContent  = m.roles.claude.label;
-  $('persona-claude').textContent = m.roles.claude.persona;
-  const slot1Label = $('label-slot1').textContent.split(' · ')[0] || '비전가';
-  const slot2Label = $('label-slot2').textContent.split(' · ')[0] || '현실주의자';
-  $('label-slot1').textContent  = m.roles.slot1.label + ($('label-slot1').textContent.includes('·') ? ' · ' + $('label-slot1').textContent.split(' · ').slice(1).join(' · ') : '');
-  $('persona-slot1').textContent = m.roles.slot1.persona;
-  $('label-slot2').textContent  = m.roles.slot2.label + ($('label-slot2').textContent.includes('·') ? ' · ' + $('label-slot2').textContent.split(' · ').slice(1).join(' · ') : '');
-  $('persona-slot2').textContent = m.roles.slot2.persona;
-  $('role-devil').textContent   = m.roles.devil.label;
-  $('persona-devil').textContent = m.roles.devil.persona;
-
-  // 슬롯 레이블 재계산
-  onModelSelect('slot1');
-  onModelSelect('slot2');
-
-  // MODELS 페르소나 + role 업데이트
-  const roleMap = {
-    debate: { claude:'분석가', gpt:'비전가', gemini:'현실주의자', devil:'악마의 변호인' },
-    collab: { claude:'기획자', gpt:'개발자', gemini:'디자이너',    devil:'비즈니스 전략가' },
-  };
-  MODELS.forEach(x => {
-    x.persona = m.personas[x.id];
-    x.role    = roleMap[mode][x.id];
-  });
-
-  try { localStorage.setItem('debate_mode', mode); } catch(e) {}
-}
-
-const MODEL_META = {
-  claude: { color:'#a78bfa', company:'Anthropic', apiType:'anthropic', apiModel:'claude-sonnet-4-20250514', placeholder:'sk-ant-api03-...', keyId:'claude', needProxy:false },
-  gpt:    { color:'#34d399', company:'OpenAI',    apiType:'openai',    apiModel:'gpt-4o',                   placeholder:'sk-proj-...',     keyId:'gpt',    needProxy:true  },
-  gemini: { color:'#60a5fa', company:'Google',    apiType:'gemini',    apiModel:'gemini-2.5-flash', placeholder:'AIzaSy...',       keyId:'gemini', needProxy:true  },
-};
-
-const KEY_INFO = {
-  gpt:    { placeholder:'OpenAI API 키 (sk-proj-...)',   keyId:'key-gpt',    ksId:'ks-gpt',    note:'프록시 서버 필요' },
-  gemini: { placeholder:'Google API 키 (AIzaSy...)',     keyId:'key-gemini', ksId:'ks-gemini', note:'프록시 서버 필요' },
-};
-
-function onModelSelect(slot) {
-  const sel = document.getElementById('model-select-'+slot).value;
-  const roleLabel = slot === 'slot1' ? '비전가' : '현실주의자';
-  const slotColor = slot === 'slot1' ? '#34d399' : '#60a5fa';
-  const modelName = sel === 'gpt' ? 'GPT-4o' : sel === 'gemini' ? 'Gemini' : 'Claude';
-
-  document.getElementById('dot-'+slot).style.background = slotColor;
-  const lbl = document.getElementById('label-'+slot);
-  lbl.style.color = slotColor;
-  lbl.textContent = roleLabel + ' · ' + modelName;
-
-  updateKeyAreas();
-  try { localStorage.setItem('debate_model_'+slot, sel); } catch(e) {}
-}
-
-function updateKeyAreas() {
-  const sel1 = document.getElementById('model-select-slot1').value;
-  const sel2 = document.getElementById('model-select-slot2').value;
-
-  // slot1 키 영역
-  const area1 = document.getElementById('key-area-slot1');
-  if (sel1 === 'claude') {
-    area1.innerHTML = '<div class="note" style="color:var(--text-2)">↑ 분석가와 동일 Claude 키 사용</div>';
-  } else {
-    const info = KEY_INFO[sel1];
-    const saved = getSavedKey(info.keyId);
-    area1.innerHTML = `
+      // slot1 키 영역
+      const area1 = document.getElementById('key-area-slot1');
+      if (sel1 === 'claude') {
+        area1.innerHTML = '<div class="note" style="color:var(--text-2)">↑ 분석가와 동일 Claude 키 사용</div>';
+      } else {
+        const info = KEY_INFO[sel1];
+        const saved = getSavedKey(info.keyId);
+        area1.innerHTML = `
       <div class="key-input-wrap" style="margin-top:4px">
         <input type="password" id="${info.keyId}" placeholder="${info.placeholder}" autocomplete="off" oninput="ks('${sel1}',this.value)" value="${saved}">
         <span class="key-status" id="${info.ksId}">${saved.length > 8 ? '✓' : ''}</span>
       </div>
       <div class="note">※ ${info.note}</div>`;
-  }
+      }
 
-  // slot2 키 영역
-  const area2 = document.getElementById('key-area-slot2');
-  if (sel2 === 'claude') {
-    area2.innerHTML = '<div class="note" style="color:var(--text-2)">↑ 분석가와 동일 Claude 키 사용</div>';
-  } else if (sel2 === sel1) {
-    area2.innerHTML = '<div class="note" style="color:var(--text-2)">↑ 비전가와 동일 키 사용</div>';
-  } else {
-    const info = KEY_INFO[sel2];
-    const saved = getSavedKey(info.keyId);
-    area2.innerHTML = `
+      // slot2 키 영역
+      const area2 = document.getElementById('key-area-slot2');
+      if (sel2 === 'claude') {
+        area2.innerHTML = '<div class="note" style="color:var(--text-2)">↑ 분석가와 동일 Claude 키 사용</div>';
+      } else if (sel2 === sel1) {
+        area2.innerHTML = '<div class="note" style="color:var(--text-2)">↑ 비전가와 동일 키 사용</div>';
+      } else {
+        const info = KEY_INFO[sel2];
+        const saved = getSavedKey(info.keyId);
+        area2.innerHTML = `
       <div class="key-input-wrap" style="margin-top:4px">
         <input type="password" id="${info.keyId}" placeholder="${info.placeholder}" autocomplete="off" oninput="ks('${sel2}',this.value)" value="${saved}">
         <span class="key-status" id="${info.ksId}">${saved.length > 8 ? '✓' : ''}</span>
       </div>
       <div class="note">※ ${info.note}</div>`;
-  }
-}
-
-function getSavedKey(inputId) {
-  const storageKey = { 'key-gpt':'debate_key_gpt', 'key-gemini':'debate_key_gemini' }[inputId];
-  try { return localStorage.getItem(storageKey) || ''; } catch(e) { return ''; }
-}
-
-function loadSavedModels() {
-  ['slot1','slot2'].forEach(slot => {
-    try {
-      const v = localStorage.getItem('debate_model_'+slot);
-      if (v) {
-        document.getElementById('model-select-'+slot).value = v;
-        onModelSelect(slot);
       }
-    } catch(e) {}
-  });
-  updateKeyAreas();
-}
+    }
 
-// 슬롯별 런타임 apiType 반환
-function slotApiType(slot) {
-  return MODEL_META[document.getElementById('model-select-'+slot).value].apiType;
-}
-function slotKeyId(slot) {
-  return MODEL_META[document.getElementById('model-select-'+slot).value].keyId;
-}
-function slotMeta(slot) {
-  return MODEL_META[document.getElementById('model-select-'+slot).value];
-}
+    function getSavedKey(inputId) {
+      const storageKey = { 'key-gpt': 'debate_key_gpt', 'key-gemini': 'debate_key_gemini' }[inputId];
+      try { return localStorage.getItem(storageKey) || ''; } catch (e) { return ''; }
+    }
 
-let history = [], running = false, stopped = false;
+    function loadSavedModels() {
+      ['slot1', 'slot2'].forEach(slot => {
+        try {
+          const v = localStorage.getItem('debate_model_' + slot);
+          if (v) {
+            document.getElementById('model-select-' + slot).value = v;
+            onModelSelect(slot);
+          }
+        } catch (e) { }
+      });
+      updateKeyAreas();
+    }
 
-function proxyBase() { return 'http://localhost:' + (parseInt(document.getElementById('proxy-port').value)||3131); }
+    // 슬롯별 런타임 apiType 반환
+    function slotApiType(slot) {
+      return MODEL_META[document.getElementById('model-select-' + slot).value].apiType;
+    }
+    function slotKeyId(slot) {
+      return MODEL_META[document.getElementById('model-select-' + slot).value].keyId;
+    }
+    function slotMeta(slot) {
+      return MODEL_META[document.getElementById('model-select-' + slot).value];
+    }
 
-async function checkProxy() {
-  const b = document.getElementById('proxy-badge');
-  const t = document.getElementById('proxy-badge-txt');
-  b.className = 'proxy-badge'; t.textContent = '확인 중...';
-  try {
-    await fetch(proxyBase() + '/proxy/openai', { method:'OPTIONS', signal:AbortSignal.timeout(2500) });
-    b.className = 'proxy-badge ok'; t.textContent = '프록시 연결됨';
-  } catch {
-    b.className = 'proxy-badge err'; t.textContent = '프록시 오프라인';
-  }
-}
+    let history = [], running = false, stopped = false;
 
-function ks(id, v) {
-  const e = document.getElementById('ks-'+id);
-  if (e) e.textContent = v.trim().length>8?'✓':'';
-  try { localStorage.setItem('debate_key_'+id, v); } catch(e) {}
-}
+    // 로컬이면 localhost 프록시, 배포 환경이면 /api/ 사용
+    function isLocal() {
+      return location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    }
+    function proxyBase() {
+      if (isLocal()) return 'http://localhost:' + (parseInt(document.getElementById('proxy-port').value) || 3131);
+      return '';  // Vercel: 상대경로 /api/ 사용
+    }
+    function openaiEndpoint() {
+      return isLocal() ? proxyBase() + '/proxy/openai' : '/api/openai';
+    }
+    function geminiEndpoint(model, key) {
+      if (isLocal()) return proxyBase() + '/proxy/gemini/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(key);
+      return '/api/gemini?model=' + encodeURIComponent(model) + '&key=' + encodeURIComponent(key);
+    }
 
-function loadSavedKeys() {
-  ['claude','gpt','gemini'].forEach(id => {
-    try {
-      const v = localStorage.getItem('debate_key_'+id);
-      if (v) {
-        const el = document.getElementById('key-'+id);
-        if (el) { el.value = v; ks(id, v); }
+    async function checkProxy() {
+      const b = document.getElementById('proxy-badge');
+      const t = document.getElementById('proxy-badge-txt');
+      b.className = 'proxy-badge'; t.textContent = '확인 중...';
+      try {
+        await fetch(proxyBase() + '/proxy/openai', { method: 'OPTIONS', signal: AbortSignal.timeout(2500) });
+        b.className = 'proxy-badge ok'; t.textContent = '프록시 연결됨';
+      } catch {
+        b.className = 'proxy-badge err'; t.textContent = '프록시 오프라인';
       }
-    } catch(e) {}
-  });
-}
+    }
 
-function getKeyValue(keyId) {
-  const el = document.getElementById(keyId);
-  return el ? el.value.trim() : '';
-}
+    function ks(id, v) {
+      const e = document.getElementById('ks-' + id);
+      if (e) e.textContent = v.trim().length > 8 ? '✓' : '';
+      try { localStorage.setItem('debate_key_' + id, v); } catch (e) { }
+    }
 
-function getActive() {
-  const ck  = getKeyValue('key-claude');
-  const gk  = getKeyValue('key-gpt');
-  const gek = getKeyValue('key-gemini');
-  return MODELS.filter(m => {
-    if (!document.getElementById('en-'+m.id).checked) return false;
-    const slot = m.id === 'gpt' ? 'slot1' : m.id === 'gemini' ? 'slot2' : null;
-    const meta = slot ? slotMeta(slot) : null;
-    const apiType = meta ? meta.apiType : m.apiType;
-    if (apiType === 'anthropic' && !ck) return false;
-    if (apiType === 'openai'    && !gk) return false;
-    if (apiType === 'gemini'    && !gek) return false;
-    return true;
-  });
-}
+    function loadSavedKeys() {
+      ['claude', 'gpt', 'gemini'].forEach(id => {
+        try {
+          const v = localStorage.getItem('debate_key_' + id);
+          if (v) {
+            const el = document.getElementById('key-' + id);
+            if (el) { el.value = v; ks(id, v); }
+          }
+        } catch (e) { }
+      });
+    }
 
-const $ = id => document.getElementById(id);
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+    function getKeyValue(keyId) {
+      const el = document.getElementById(keyId);
+      return el ? el.value.trim() : '';
+    }
 
-function clearEmpty() { const e = $('empty-state'); if(e) e.remove(); }
-function scrollBot() { const c = $('messages'); c.scrollTop = c.scrollHeight; }
-function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+    function getActive() {
+      const ck = getKeyValue('key-claude');
+      const gk = getKeyValue('key-gpt');
+      const gek = getKeyValue('key-gemini');
+      return MODELS.filter(m => {
+        if (!document.getElementById('en-' + m.id).checked) return false;
+        const slot = m.id === 'gpt' ? 'slot1' : m.id === 'gemini' ? 'slot2' : null;
+        const meta = slot ? slotMeta(slot) : null;
+        const apiType = meta ? meta.apiType : m.apiType;
+        if (apiType === 'anthropic' && !ck) return false;
+        if (apiType === 'openai' && !gk) return false;
+        if (apiType === 'gemini' && !gek) return false;
+        return true;
+      });
+    }
 
-function addDivider(n) {
-  clearEmpty();
-  const d = document.createElement('div');
-  d.className = 'round-divider';
-  d.innerHTML = '<span>라운드 '+n+'</span>';
-  $('messages').appendChild(d);
-}
+    const $ = id => document.getElementById(id);
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-function addHostMsg(text) {
-  clearEmpty();
-  const d = document.createElement('div');
-  d.className = 'message';
-  d.innerHTML = '<div class="avatar" style="background:rgba(251,191,36,0.13);color:#fbbf24">🎙</div><div class="msg-body"><div class="msg-header"><span class="msg-name" style="color:#fbbf24">진행자</span></div><div class="msg-text">'+esc(text)+'</div></div>';
-  $('messages').appendChild(d); scrollBot();
-}
+    function clearEmpty() { const e = $('empty-state'); if (e) e.remove(); }
+    function scrollBot() { const c = $('messages'); c.scrollTop = c.scrollHeight; }
+    function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'); }
 
-function addTyping(m) {
-  clearEmpty();
-  const d = document.createElement('div');
-  d.className = 'message'; d.id = 'typing-'+m.id;
-  d.innerHTML = '<div class="avatar" style="background:'+m.bg+';color:'+m.color+'">'+m.initials+'</div><div class="msg-body"><div class="msg-header"><span class="msg-name" style="color:'+m.color+'">'+m.name+'</span><span class="msg-role">'+m.role+' · '+m.company+'</span></div><div class="typing-dots"><span></span><span></span><span></span></div></div>';
-  $('messages').appendChild(d); scrollBot();
-}
+    function addDivider(n) {
+      clearEmpty();
+      const d = document.createElement('div');
+      d.className = 'round-divider';
+      d.innerHTML = '<span>라운드 ' + n + '</span>';
+      $('messages').appendChild(d);
+    }
 
-function removeTyping(id) { const e = $('typing-'+id); if(e) e.remove(); }
+    function addHostMsg(text) {
+      clearEmpty();
+      const d = document.createElement('div');
+      d.className = 'message';
+      d.innerHTML = '<div class="avatar" style="background:rgba(251,191,36,0.13);color:#fbbf24">🎙</div><div class="msg-body"><div class="msg-header"><span class="msg-name" style="color:#fbbf24">진행자</span></div><div class="msg-text">' + esc(text) + '</div></div>';
+      $('messages').appendChild(d); scrollBot();
+    }
 
-function addMsg(m, text, isErr) {
-  clearEmpty();
-  const d = document.createElement('div');
-  d.className = 'message';
-  d.innerHTML = '<div class="avatar" style="background:'+m.bg+';color:'+m.color+'">'+m.initials+'</div><div class="msg-body"><div class="msg-header"><span class="msg-name" style="color:'+m.color+'">'+m.name+'</span><span class="msg-role">'+m.role+' · '+m.company+'</span></div><div class="msg-text'+(isErr?' is-error':'')+'">'+esc(text)+'</div></div>';
-  $('messages').appendChild(d); scrollBot();
-}
+    function addTyping(m) {
+      clearEmpty();
+      const d = document.createElement('div');
+      d.className = 'message'; d.id = 'typing-' + m.id;
+      d.innerHTML = '<div class="avatar" style="background:' + m.bg + ';color:' + m.color + '">' + m.initials + '</div><div class="msg-body"><div class="msg-header"><span class="msg-name" style="color:' + m.color + '">' + m.name + '</span><span class="msg-role">' + m.role + ' · ' + m.company + '</span></div><div class="typing-dots"><span></span><span></span><span></span></div></div>';
+      $('messages').appendChild(d); scrollBot();
+    }
 
-function setStatus(msg, on) {
-  $('status-msg').textContent = msg;
-  $('status-led').className = 'status-led'+(on?' on':'');
-}
+    function removeTyping(id) { const e = $('typing-' + id); if (e) e.remove(); }
 
-function buildPrompt(hist, topic) {
-  return MODES[currentMode].buildPrompt(hist, topic);
-}
+    function addMsg(m, text, isErr) {
+      clearEmpty();
+      const d = document.createElement('div');
+      d.className = 'message';
+      d.innerHTML = '<div class="avatar" style="background:' + m.bg + ';color:' + m.color + '">' + m.initials + '</div><div class="msg-body"><div class="msg-header"><span class="msg-name" style="color:' + m.color + '">' + m.name + '</span><span class="msg-role">' + m.role + ' · ' + m.company + '</span></div><div class="msg-text' + (isErr ? ' is-error' : '') + '">' + esc(text) + '</div></div>';
+      $('messages').appendChild(d); scrollBot();
+    }
 
-async function callAnthropic(m, hist, topic) {
-  const key = $('key-claude').value.trim();
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:m.apiModel,max_tokens:1024,system:m.persona,messages:[{role:'user',content:buildPrompt(hist,topic)}]})
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message||'HTTP '+res.status);
-  return data.content[0].text;
-}
+    function setStatus(msg, on) {
+      $('status-msg').textContent = msg;
+      $('status-led').className = 'status-led' + (on ? ' on' : '');
+    }
 
-async function callOpenAI(m, hist, topic) {
-  const key = getKeyValue('key-gpt');
-  const res = await fetch(proxyBase()+'/proxy/openai', {
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-    body:JSON.stringify({model:m.apiModel,max_tokens:1024,messages:[{role:'system',content:m.persona},{role:'user',content:buildPrompt(hist,topic)}]})
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message||'HTTP '+res.status);
-  return data.choices[0].message.content;
-}
+    function buildPrompt(hist, topic) {
+      return MODES[currentMode].buildPrompt(hist, topic);
+    }
 
-async function callGemini(m, hist, topic) {
-  const key = getKeyValue('key-gemini');
-  const url = proxyBase()+'/proxy/gemini/v1beta/models/'+m.apiModel+':generateContent?key='+encodeURIComponent(key);
-  const res = await fetch(url, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({systemInstruction:{parts:[{text:m.persona}]},contents:[{role:'user',parts:[{text:buildPrompt(hist,topic)}]}],generationConfig:{maxOutputTokens:2048,temperature:0.85}})
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message||'HTTP '+res.status);
-  const candidate = data.candidates[0];
-  const finishReason = candidate.finishReason;
-  const text = candidate.content.parts[0].text;
-  if (finishReason === 'MAX_TOKENS') console.warn('Gemini: MAX_TOKENS hit, response may be truncated');
-  return text;
-}
+    async function callAnthropic(m, hist, topic) {
+      const key = $('key-claude').value.trim();
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({ model: m.apiModel, max_tokens: 1024, system: m.persona, messages: [{ role: 'user', content: buildPrompt(hist, topic) }] })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || 'HTTP ' + res.status);
+      return data.content[0].text;
+    }
 
-async function callModel(m, hist, topic) {
-  const slot = m.id === 'gpt' ? 'slot1' : m.id === 'gemini' ? 'slot2' : null;
-  const meta = slot ? slotMeta(slot) : null;
-  const apiType  = meta ? meta.apiType  : m.apiType;
-  const apiModel = meta ? meta.apiModel : m.apiModel;
+    async function callOpenAI(m, hist, topic) {
+      const key = getKeyValue('key-gpt');
+      const res = await fetch(openaiEndpoint(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({ model: m.apiModel, max_tokens: 1024, messages: [{ role: 'system', content: m.persona }, { role: 'user', content: buildPrompt(hist, topic) }] })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || 'HTTP ' + res.status);
+      return data.choices[0].message.content;
+    }
 
-  const ROLE_STYLE = {
-    slot1: { color:'#34d399', bg:'rgba(52,211,153,0.13)',  initials:'비전' },
-    slot2: { color:'#60a5fa', bg:'rgba(96,165,250,0.13)',  initials:'현실' },
-  };
+    async function callGemini(m, hist, topic) {
+      const key = getKeyValue('key-gemini');
+      const url = geminiEndpoint(m.apiModel, key);
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ systemInstruction: { parts: [{ text: m.persona }] }, contents: [{ role: 'user', parts: [{ text: buildPrompt(hist, topic) }] }], generationConfig: { maxOutputTokens: 2048, temperature: 0.85 } })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || 'HTTP ' + res.status);
+      const candidate = data.candidates[0];
+      const finishReason = candidate.finishReason;
+      const text = candidate.content.parts[0].text;
+      if (finishReason === 'MAX_TOKENS') console.warn('Gemini: MAX_TOKENS hit, response may be truncated');
+      return text;
+    }
 
-  let display = m;
-  if (meta && meta.apiType === 'anthropic') {
-    const rs = slot ? ROLE_STYLE[slot] : null;
-    display = { ...m, name:'Claude', company:'Anthropic',
-      color: rs ? rs.color : '#a78bfa',
-      bg:    rs ? rs.bg    : 'rgba(167,139,250,0.13)',
-      initials: rs ? rs.initials : 'CL', apiType:'anthropic', apiModel };
-  } else if (meta && meta.apiType === 'openai') {
-    const rs = ROLE_STYLE[slot];
-    display = { ...m, name:'GPT-4o', company:'OpenAI', color:rs.color, bg:rs.bg, initials:rs.initials, apiType:'openai', apiModel };
-  } else if (meta && meta.apiType === 'gemini') {
-    const rs = ROLE_STYLE[slot];
-    display = { ...m, name:'Gemini', company:'Google', color:rs.color, bg:rs.bg, initials:rs.initials, apiType:'gemini', apiModel };
-  }
-
-  if (apiType === 'anthropic') return { text: await callAnthropic({...m, apiModel}, hist, topic), display };
-  if (apiType === 'openai')    return { text: await callOpenAI({...m, apiModel}, hist, topic), display };
-  if (apiType === 'gemini')    return { text: await callGemini({...m, apiModel}, hist, topic), display };
-}
-
-async function startDebate() {
-  const topic = $('topic-input').value.trim();
-  if (!topic) { alert('토론 주제를 입력해주세요.'); return; }
-  const active = getActive();
-  if (active.length < 2) { alert('최소 2개 이상의 API 키를 입력하고 참여자를 활성화해주세요.'); return; }
-  const rounds = parseInt($('rounds-select').value);
-
-  $('messages').innerHTML = '';
-  history = []; running = true; stopped = false;
-  $('start-btn').disabled = true;
-  $('stop-btn').style.display = 'block';
-  $('topic-bar').style.display = 'flex';
-  $('topic-display').textContent = '"'+topic+'"';
-  $('round-display').textContent = '시작 중...';
-
-  const participantNames = active.map(m => {
-    const slot = m.id === 'gpt' ? 'slot1' : m.id === 'gemini' ? 'slot2' : null;
-    const meta = slot ? slotMeta(slot) : null;
-    let name = m.name;
-    if (meta && meta.apiType === 'anthropic') name = 'Claude';
-    else if (meta && meta.apiType === 'openai') name = 'GPT-4o';
-    else if (meta && meta.apiType === 'gemini') name = 'Gemini';
-    return name + '/' + m.role;
-  });
-  addHostMsg(MODES[currentMode].hostStart(topic, rounds, participantNames));
-
-  const total = rounds * active.length;
-  let step = 0;
-
-  for (let r = 1; r <= rounds; r++) {
-    addDivider(r);
-    $('round-display').textContent = r+' / '+rounds+' 라운드';
-
-    for (const m of active) {
-      if (stopped) break;
-      step++;
-      $('progress-txt').textContent = step+' / '+total;
-
+    async function callModel(m, hist, topic) {
       const slot = m.id === 'gpt' ? 'slot1' : m.id === 'gemini' ? 'slot2' : null;
       const meta = slot ? slotMeta(slot) : null;
+      const apiType = meta ? meta.apiType : m.apiType;
+      const apiModel = meta ? meta.apiModel : m.apiModel;
 
-      // 역할별 고정 색상 (모델 선택과 무관)
       const ROLE_STYLE = {
-        slot1:  { color:'#34d399', bg:'rgba(52,211,153,0.13)',  initials:'비전' },
-        slot2:  { color:'#60a5fa', bg:'rgba(96,165,250,0.13)',  initials:'현실' },
+        slot1: { color: '#34d399', bg: 'rgba(52,211,153,0.13)', initials: '비전' },
+        slot2: { color: '#60a5fa', bg: 'rgba(96,165,250,0.13)', initials: '현실' },
       };
 
-      let displayM = m;
+      let display = m;
       if (meta && meta.apiType === 'anthropic') {
         const rs = slot ? ROLE_STYLE[slot] : null;
-        displayM = { ...m, name:'Claude', company:'Anthropic',
+        display = {
+          ...m, name: 'Claude', company: 'Anthropic',
           color: rs ? rs.color : '#a78bfa',
-          bg:    rs ? rs.bg    : 'rgba(167,139,250,0.13)',
-          initials: rs ? rs.initials : 'CL' };
+          bg: rs ? rs.bg : 'rgba(167,139,250,0.13)',
+          initials: rs ? rs.initials : 'CL', apiType: 'anthropic', apiModel
+        };
       } else if (meta && meta.apiType === 'openai') {
         const rs = ROLE_STYLE[slot];
-        displayM = { ...m, name:'GPT-4o', company:'OpenAI', color:rs.color, bg:rs.bg, initials:rs.initials };
+        display = { ...m, name: 'GPT-4o', company: 'OpenAI', color: rs.color, bg: rs.bg, initials: rs.initials, apiType: 'openai', apiModel };
       } else if (meta && meta.apiType === 'gemini') {
         const rs = ROLE_STYLE[slot];
-        displayM = { ...m, name:'Gemini', company:'Google', color:rs.color, bg:rs.bg, initials:rs.initials };
+        display = { ...m, name: 'Gemini', company: 'Google', color: rs.color, bg: rs.bg, initials: rs.initials, apiType: 'gemini', apiModel };
       }
 
-      // 타이핑 id를 루프마다 고유하게 부여해서 겹침 방지
-      const typingId = 'turn-' + step;
-      displayM = { ...displayM, id: typingId };
+      if (apiType === 'anthropic') return { text: await callAnthropic({ ...m, apiModel }, hist, topic), display };
+      if (apiType === 'openai') return { text: await callOpenAI({ ...m, apiModel }, hist, topic), display };
+      if (apiType === 'gemini') return { text: await callGemini({ ...m, apiModel }, hist, topic), display };
+    }
 
-      setStatus(displayM.name+' ('+displayM.role+') 응답 중...', true);
-      addTyping(displayM);
-      await sleep(300);
+    async function startDebate() {
+      const topic = $('topic-input').value.trim();
+      if (!topic) { alert('토론 주제를 입력해주세요.'); return; }
+      const active = getActive();
+      if (active.length < 2) { alert('최소 2개 이상의 API 키를 입력하고 참여자를 활성화해주세요.'); return; }
+      const rounds = parseInt($('rounds-select').value);
 
-      let text, display = displayM, isErr = false;
+      $('messages').innerHTML = '';
+      history = []; running = true; stopped = false;
+      $('start-btn').disabled = true;
+      $('stop-btn').style.display = 'block';
+      $('topic-bar').style.display = 'flex';
+      $('topic-display').textContent = '"' + topic + '"';
+      $('round-display').textContent = '시작 중...';
+
+      const participantNames = active.map(m => {
+        const slot = m.id === 'gpt' ? 'slot1' : m.id === 'gemini' ? 'slot2' : null;
+        const meta = slot ? slotMeta(slot) : null;
+        let name = m.name;
+        if (meta && meta.apiType === 'anthropic') name = 'Claude';
+        else if (meta && meta.apiType === 'openai') name = 'GPT-4o';
+        else if (meta && meta.apiType === 'gemini') name = 'Gemini';
+        return name + '/' + m.role;
+      });
+      addHostMsg(MODES[currentMode].hostStart(topic, rounds, participantNames));
+
+      const total = rounds * active.length;
+      let step = 0;
+
+      for (let r = 1; r <= rounds; r++) {
+        addDivider(r);
+        $('round-display').textContent = r + ' / ' + rounds + ' 라운드';
+
+        for (const m of active) {
+          if (stopped) break;
+          step++;
+          $('progress-txt').textContent = step + ' / ' + total;
+
+          const slot = m.id === 'gpt' ? 'slot1' : m.id === 'gemini' ? 'slot2' : null;
+          const meta = slot ? slotMeta(slot) : null;
+
+          // 역할별 고정 색상 (모델 선택과 무관)
+          const ROLE_STYLE = {
+            slot1: { color: '#34d399', bg: 'rgba(52,211,153,0.13)', initials: '비전' },
+            slot2: { color: '#60a5fa', bg: 'rgba(96,165,250,0.13)', initials: '현실' },
+          };
+
+          let displayM = m;
+          if (meta && meta.apiType === 'anthropic') {
+            const rs = slot ? ROLE_STYLE[slot] : null;
+            displayM = {
+              ...m, name: 'Claude', company: 'Anthropic',
+              color: rs ? rs.color : '#a78bfa',
+              bg: rs ? rs.bg : 'rgba(167,139,250,0.13)',
+              initials: rs ? rs.initials : 'CL'
+            };
+          } else if (meta && meta.apiType === 'openai') {
+            const rs = ROLE_STYLE[slot];
+            displayM = { ...m, name: 'GPT-4o', company: 'OpenAI', color: rs.color, bg: rs.bg, initials: rs.initials };
+          } else if (meta && meta.apiType === 'gemini') {
+            const rs = ROLE_STYLE[slot];
+            displayM = { ...m, name: 'Gemini', company: 'Google', color: rs.color, bg: rs.bg, initials: rs.initials };
+          }
+
+          // 타이핑 id를 루프마다 고유하게 부여해서 겹침 방지
+          const typingId = 'turn-' + step;
+          displayM = { ...displayM, id: typingId };
+
+          setStatus(displayM.name + ' (' + displayM.role + ') 응답 중...', true);
+          addTyping(displayM);
+          await sleep(300);
+
+          let text, display = displayM, isErr = false;
+          try {
+            const result = await callModel(m, history, topic);
+            text = result.text;
+            display = { ...result.display, id: typingId };
+          }
+          catch (e) { text = '오류: ' + e.message; isErr = true; console.error(m.name, e); }
+          if (stopped) { removeTyping(typingId); break; }
+
+          removeTyping(typingId);
+          await sleep(100); // 타이핑 제거 후 잠깐 대기
+          addMsg(display, text, isErr);
+          if (!isErr) history.push({ name: display.name, role: display.role, text });
+          await sleep(900);
+        }
+      }
+
+      if (!stopped) {
+        setStatus('진행자 요약 중...', true);
+        await sleep(600);
+        addHostMsg(MODES[currentMode].hostClosingPending(rounds));
+        const closing = await generateClosing(history, topic);
+        const msgs = $('messages').querySelectorAll('.message');
+        const last = msgs[msgs.length - 1];
+        if (last) {
+          last.querySelector('.msg-text').innerHTML = esc(closing);
+          scrollBot();
+        }
+      } else {
+        addHostMsg('토론이 중단되었습니다.');
+      }
+      $('round-display').textContent = stopped ? '중단됨' : '완료 (' + rounds + ' 라운드)';
+      $('progress-txt').textContent = '';
+      setStatus(stopped ? '중단됨' : '토론 완료', false);
+      $('start-btn').disabled = false;
+      $('stop-btn').style.display = 'none';
+      $('stop-overlay').classList.remove('show');
+      running = false;
+    }
+
+    async function generateClosing(hist, topic) {
+      const key = getKeyValue('key-claude');
+      const mode = MODES[currentMode];
+      if (!key) return currentMode === 'debate'
+        ? '토론이 종료되었습니다. 다양한 관점에서 풍성한 논의가 이루어졌습니다.'
+        : '논의가 종료되었습니다. 각 전문가의 의견을 바탕으로 실행 방안을 검토해보세요.';
+      const summary = hist.map(h => '[' + h.name + '/' + h.role + ']: ' + h.text).join('\n\n');
       try {
-        const result = await callModel(m, history, topic);
-        text = result.text;
-        display = { ...result.display, id: typingId };
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 700,
+            system: mode.closingSystem,
+            messages: [{ role: 'user', content: mode.closingPrompt(topic, summary) }]
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error?.message);
+        return data.content[0].text;
+      } catch (e) {
+        console.error('closing error:', e);
+        return currentMode === 'debate'
+          ? '토론이 종료되었습니다. 참여자 여러분의 열띤 토론에 감사드립니다.'
+          : '논의가 종료되었습니다. 도출된 아이디어를 바탕으로 다음 단계를 진행해보세요.';
       }
-      catch(e) { text = '오류: '+e.message; isErr = true; console.error(m.name, e); }
-      if (stopped) { removeTyping(typingId); break; }
-
-      removeTyping(typingId);
-      await sleep(100); // 타이핑 제거 후 잠깐 대기
-      addMsg(display, text, isErr);
-      if (!isErr) history.push({name:display.name, role:display.role, text});
-      await sleep(900);
     }
-  }
 
-  if (!stopped) {
-    setStatus('진행자 요약 중...', true);
-    await sleep(600);
-    addHostMsg(MODES[currentMode].hostClosingPending(rounds));
-    const closing = await generateClosing(history, topic);
-    const msgs = $('messages').querySelectorAll('.message');
-    const last = msgs[msgs.length - 1];
-    if (last) {
-      last.querySelector('.msg-text').innerHTML = esc(closing);
-      scrollBot();
+    function clearKeys() {
+      ['claude', 'gpt', 'gemini'].forEach(id => {
+        try { localStorage.removeItem('debate_key_' + id); } catch (e) { }
+        const el = document.getElementById('key-' + id);
+        if (el) el.value = '';
+        const kel = document.getElementById('ks-' + id);
+        if (kel) kel.textContent = '';
+      });
     }
-  } else {
-    addHostMsg('토론이 중단되었습니다.');
-  }
-  $('round-display').textContent = stopped ? '중단됨' : '완료 ('+rounds+' 라운드)';
-  $('progress-txt').textContent = '';
-  setStatus(stopped ? '중단됨' : '토론 완료', false);
-  $('start-btn').disabled = false;
-  $('stop-btn').style.display = 'none';
-  $('stop-overlay').classList.remove('show');
-  running = false;
-}
 
-async function generateClosing(hist, topic) {
-  const key = getKeyValue('key-claude');
-  const mode = MODES[currentMode];
-  if (!key) return currentMode === 'debate'
-    ? '토론이 종료되었습니다. 다양한 관점에서 풍성한 논의가 이루어졌습니다.'
-    : '논의가 종료되었습니다. 각 전문가의 의견을 바탕으로 실행 방안을 검토해보세요.';
-  const summary = hist.map(h => '['+h.name+'/'+h.role+']: '+h.text).join('\n\n');
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:700,
-        system: mode.closingSystem,
-        messages:[{role:'user', content: mode.closingPrompt(topic, summary)}]
-      })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message);
-    return data.content[0].text;
-  } catch(e) {
-    console.error('closing error:', e);
-    return currentMode === 'debate'
-      ? '토론이 종료되었습니다. 참여자 여러분의 열띤 토론에 감사드립니다.'
-      : '논의가 종료되었습니다. 도출된 아이디어를 바탕으로 다음 단계를 진행해보세요.';
-  }
-}
+    function stopDebate() {
+      if (!running) return;
+      stopped = true;
+      $('stop-btn').style.display = 'none';
+      $('stop-overlay').classList.add('show');
+      setStatus('중단 중...', false);
+    }
 
-function clearKeys() {
-  ['claude','gpt','gemini'].forEach(id => {
-    try { localStorage.removeItem('debate_key_'+id); } catch(e) {}
-    const el = document.getElementById('key-'+id);
-    if (el) el.value = '';
-    const kel = document.getElementById('ks-'+id);
-    if (kel) kel.textContent = '';
-  });
-}
+    function clearDebate() {
+      if (running) { stopDebate(); return; }
+      history = [];
+      $('messages').innerHTML = '<div class="empty-state" id="empty-state"><div class="empty-icon"><div class="empty-pip" style="background:var(--c-claude)"></div><div class="empty-pip" style="background:var(--c-gpt)"></div><div class="empty-pip" style="background:var(--c-gemini)"></div><div class="empty-pip" style="background:var(--c-devil)"></div></div><p>① <code style="font-size:12px;color:#34d399;font-family:\'Courier New\',monospace">node proxy-server.js</code> 실행<br>② API 키 입력 후 토론 시작<br><br><span style="font-size:11px;color:var(--text-2)">Claude만 사용 시 프록시 불필요</span></p></div>';
+      $('topic-bar').style.display = 'none';
+      setStatus('대기 중', false);
+      $('progress-txt').textContent = '';
+    }
 
-function stopDebate() {
-  if (!running) return;
-  stopped = true;
-  $('stop-btn').style.display = 'none';
-  $('stop-overlay').classList.add('show');
-  setStatus('중단 중...', false);
-}
-
-function clearDebate() {
-  if (running) { stopDebate(); return; }
-  history = [];
-  $('messages').innerHTML = '<div class="empty-state" id="empty-state"><div class="empty-icon"><div class="empty-pip" style="background:var(--c-claude)"></div><div class="empty-pip" style="background:var(--c-gpt)"></div><div class="empty-pip" style="background:var(--c-gemini)"></div><div class="empty-pip" style="background:var(--c-devil)"></div></div><p>① <code style="font-size:12px;color:#34d399;font-family:\'Courier New\',monospace">node proxy-server.js</code> 실행<br>② API 키 입력 후 토론 시작<br><br><span style="font-size:11px;color:var(--text-2)">Claude만 사용 시 프록시 불필요</span></p></div>';
-  $('topic-bar').style.display = 'none';
-  setStatus('대기 중', false);
-  $('progress-txt').textContent = '';
-}
-
-checkProxy();
-document.getElementById('proxy-port').addEventListener('change', checkProxy);
-loadSavedKeys();
-loadSavedModels();
-try { const m = localStorage.getItem('debate_mode'); if (m) setMode(m); else setMode('debate'); } catch(e) { setMode('debate'); }
-</script>
+    checkProxy();
+    document.getElementById('proxy-port').addEventListener('change', checkProxy);
+    // Vercel 배포 환경에선 프록시 섹션 숨기기
+    if (!isLocal()) {
+      const proxySection = document.getElementById('proxy-section');
+      if (proxySection) proxySection.style.display = 'none';
+      const badge = document.getElementById('proxy-badge');
+      if (badge) badge.style.display = 'none';
+    }
+    loadSavedKeys();
+    loadSavedModels();
+    try { const m = localStorage.getItem('debate_mode'); if (m) setMode(m); else setMode('debate'); } catch (e) { setMode('debate'); }
+  </script>
 </body>
+
 </html>
