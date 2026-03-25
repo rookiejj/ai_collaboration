@@ -864,6 +864,7 @@
       display: none;
       position: fixed;
       inset: 0;
+      bottom: 52px;
       background: rgba(0, 0, 0, 0.5);
       z-index: 200;
     }
@@ -910,7 +911,7 @@
         position: fixed;
         left: 0;
         top: 0;
-        bottom: 0;
+        bottom: 52px;
         width: 80vw;
         max-width: 300px;
         z-index: 300;
@@ -929,7 +930,7 @@
         position: fixed;
         right: 0;
         top: 0;
-        bottom: 0;
+        bottom: 52px;
         width: 80vw;
         max-width: 300px;
         z-index: 300;
@@ -1110,7 +1111,7 @@
           <option value="4">4 라운드</option>
           <option value="5">5 라운드</option>
         </select>
-        <button class="primary" id="start-btn" onclick="startDebate()">▶ 토론 시작</button>
+        <button class="primary" id="start-btn" onclick="closeDrawers(); startDebate()">▶ 토론 시작</button>
         <button id="stop-btn" onclick="stopDebate()"
           style="display:none;width:100%;margin-top:6px;border-radius:7px;padding:8px 0;font-size:13px;color:#f87171;border-color:rgba(248,113,113,0.35);">■
           중단</button>
