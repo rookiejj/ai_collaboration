@@ -1135,10 +1135,7 @@
             <div class="empty-pip" style="background:var(--c-gemini)"></div>
             <div class="empty-pip" style="background:var(--c-devil)"></div>
           </div>
-          <p>① <code
-              style="font-size:12px;color:#34d399;font-family:'Courier New',monospace">node proxy-server.js</code>
-            실행<br>② API 키 입력 후 토론 시작<br><br><span style="font-size:11px;color:var(--text-2)">Claude만 사용 시 프록시 불필요</span>
-          </p>
+          <p id="empty-hint"></p>
         </div>
       </div>
 
@@ -1156,59 +1153,7 @@
 
       <div class="guide-section">
         <h3>시작하기</h3>
-
-        <div class="step">
-          <div class="step-num">·</div>
-          <div class="step-body">
-            <div class="step-title">사전 조건 — Node.js</div>
-            <div class="step-desc">
-              <a href="https://nodejs.org" style="color:#60a5fa;text-decoration:none">nodejs.org</a> 에서 LTS 버전 설치.<br>
-              설치 확인: <code>node -v</code>
-            </div>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="step-num">1</div>
-          <div class="step-body">
-            <div class="step-title">파일 준비</div>
-            <div class="step-desc">
-              아래 두 파일을 다운로드하세요.<br>
-              <code>ai-debate-arena.html</code><br>
-              <code>proxy-server.js</code>
-            </div>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="step-num">2</div>
-          <div class="step-body">
-            <div class="step-title">프록시 서버 실행</div>
-            <div class="step-desc">
-              터미널에서 proxy-server.js 위치로 이동 후:<br>
-              <code>node proxy-server.js</code><br>
-              상단 <span style="color:#34d399">✓ 프록시 연결됨</span> 뱃지 확인
-            </div>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="step-num">3</div>
-          <div class="step-body">
-            <div class="step-title">HTML 파일 열기</div>
-            <div class="step-desc">
-              <code>ai-debate-arena.html</code> 을<br>브라우저에서 직접 열기
-            </div>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="step-num">4</div>
-          <div class="step-body">
-            <div class="step-title">API 키 입력 후 시작</div>
-            <div class="step-desc">왼쪽 패널에 키 입력 → 주제 작성 → 토론 시작</div>
-          </div>
-        </div>
+        <div id="guide-steps"></div>
       </div>
 
       <div class="guide-section">
@@ -1423,8 +1368,8 @@
     };
 
     const KEY_INFO = {
-      gpt: { placeholder: 'OpenAI API 키 (sk-proj-...)', keyId: 'key-gpt', ksId: 'ks-gpt', note: '프록시 서버 필요' },
-      gemini: { placeholder: 'Google API 키 (AIzaSy...)', keyId: 'key-gemini', ksId: 'ks-gemini', note: '프록시 서버 필요' },
+      gpt: { placeholder: 'OpenAI API 키 (sk-proj-...)', keyId: 'key-gpt', ksId: 'ks-gpt', note: '로컬 실행 시 프록시 서버 필요' },
+      gemini: { placeholder: 'Google API 키 (AIzaSy...)', keyId: 'key-gemini', ksId: 'ks-gemini', note: '로컬 실행 시 프록시 서버 필요' },
     };
 
     function onModelSelect(slot) {
@@ -1445,6 +1390,7 @@
     function updateKeyAreas() {
       const sel1 = document.getElementById('model-select-slot1').value;
       const sel2 = document.getElementById('model-select-slot2').value;
+      const proxyNote = isLocal() ? '<div class="note">※ 프록시 서버 필요 (<code style="font-size:10px;color:#34d399">node proxy-server.js</code>)</div>' : '';
 
       // slot1 키 영역
       const area1 = document.getElementById('key-area-slot1');
@@ -1458,7 +1404,7 @@
         <input type="password" id="${info.keyId}" placeholder="${info.placeholder}" autocomplete="off" oninput="ks('${sel1}',this.value)" value="${saved}">
         <span class="key-status" id="${info.ksId}">${saved.length > 8 ? '✓' : ''}</span>
       </div>
-      <div class="note">※ ${info.note}</div>`;
+      ${proxyNote}`;
       }
 
       // slot2 키 영역
@@ -1475,7 +1421,7 @@
         <input type="password" id="${info.keyId}" placeholder="${info.placeholder}" autocomplete="off" oninput="ks('${sel2}',this.value)" value="${saved}">
         <span class="key-status" id="${info.ksId}">${saved.length > 8 ? '✓' : ''}</span>
       </div>
-      <div class="note">※ ${info.note}</div>`;
+      ${proxyNote}`;
       }
     }
 
@@ -1863,10 +1809,52 @@
     function clearDebate() {
       if (running) { stopDebate(); return; }
       history = [];
-      $('messages').innerHTML = '<div class="empty-state" id="empty-state"><div class="empty-icon"><div class="empty-pip" style="background:var(--c-claude)"></div><div class="empty-pip" style="background:var(--c-gpt)"></div><div class="empty-pip" style="background:var(--c-gemini)"></div><div class="empty-pip" style="background:var(--c-devil)"></div></div><p>① <code style="font-size:12px;color:#34d399;font-family:\'Courier New\',monospace">node proxy-server.js</code> 실행<br>② API 키 입력 후 토론 시작<br><br><span style="font-size:11px;color:var(--text-2)">Claude만 사용 시 프록시 불필요</span></p></div>';
+      $('messages').innerHTML = '<div class="empty-state" id="empty-state"><div class="empty-icon"><div class="empty-pip" style="background:var(--c-claude)"></div><div class="empty-pip" style="background:var(--c-gpt)"></div><div class="empty-pip" style="background:var(--c-gemini)"></div><div class="empty-pip" style="background:var(--c-devil)"></div></div><p id="empty-hint"></p></div>';
+      renderGuideSteps();
       $('topic-bar').style.display = 'none';
       setStatus('대기 중', false);
       $('progress-txt').textContent = '';
+    }
+
+    function renderGuideSteps() {
+      const el = document.getElementById('guide-steps');
+      const hint = document.getElementById('empty-hint');
+      if (!el) return;
+      if (isLocal()) {
+        el.innerHTML = `
+      <div class="step"><div class="step-num">·</div><div class="step-body">
+        <div class="step-title">사전 조건 — Node.js</div>
+        <div class="step-desc"><a href="https://nodejs.org" style="color:#60a5fa;text-decoration:none">nodejs.org</a> 에서 LTS 버전 설치.<br>설치 확인: <code>node -v</code></div>
+      </div></div>
+      <div class="step"><div class="step-num">1</div><div class="step-body">
+        <div class="step-title">파일 준비</div>
+        <div class="step-desc">두 파일을 다운로드하세요.<br><code>ai-collaboration.html</code><br><code>proxy-server.js</code></div>
+      </div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body">
+        <div class="step-title">프록시 서버 실행 (선택)</div>
+        <div class="step-desc">GPT-4o · Gemini 사용 시 필요:<br><code>node proxy-server.js</code><br><span style="color:var(--text-2);font-style:italic">Claude만 사용 시 생략 가능</span></div>
+      </div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body">
+        <div class="step-title">HTML 파일 열기</div>
+        <div class="step-desc"><code>ai-collaboration.html</code> 을<br>브라우저에서 직접 열기</div>
+      </div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-body">
+        <div class="step-title">API 키 입력 후 시작</div>
+        <div class="step-desc">왼쪽 패널에 키 입력 → 주제 작성 → 시작</div>
+      </div></div>`;
+        if (hint) hint.innerHTML = 'GPT-4o · Gemini 사용 시<br><code style="font-size:12px;color:#34d399;font-family:\'Courier New\',monospace">node proxy-server.js</code> 실행<br><br><span style="font-size:11px;color:var(--text-2)">Claude만 사용 시 바로 시작 가능</span>';
+      } else {
+        el.innerHTML = `
+      <div class="step"><div class="step-num">1</div><div class="step-body">
+        <div class="step-title">API 키 입력</div>
+        <div class="step-desc">왼쪽 패널에서 사용할 모델의 API 키를 입력하세요.</div>
+      </div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body">
+        <div class="step-title">주제 입력 후 시작</div>
+        <div class="step-desc">토론 주제 또는 해결할 문제를 입력하고 시작 버튼을 누르세요.</div>
+      </div></div>`;
+        if (hint) hint.innerHTML = 'API 키를 입력하고 시작하세요.<br><br><span style="font-size:11px;color:var(--text-2)">프록시 서버 없이 바로 사용 가능합니다</span>';
+      }
     }
 
     function toggleDrawer(which) {
@@ -1927,6 +1915,8 @@
     }
     loadSavedKeys();
     loadSavedModels();
+    renderGuideSteps();
+    checkProxy();
     try { const m = localStorage.getItem('debate_mode'); if (m) setMode(m); else setMode('debate'); } catch (e) { setMode('debate'); }
   </script>
 </body>
