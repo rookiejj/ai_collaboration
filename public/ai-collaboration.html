@@ -790,18 +790,8 @@
     }
 
     /* ── 파일 첨부 ── */
-    .file-attach-bar {
-      padding: 8px 14px;
-      border-bottom: 1px solid var(--border-0);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-      background: var(--bg-1);
-    }
-
     .file-btn {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 5px;
       font-size: 11px;
@@ -828,8 +818,8 @@
       background: var(--bg-2);
       border: 1px solid var(--border-1);
       border-radius: 6px;
-      padding: 4px 8px;
-      max-width: 200px;
+      padding: 5px 8px;
+      width: 100%;
     }
 
     .file-preview-thumb {
@@ -845,6 +835,7 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       flex: 1;
+      min-width: 0;
     }
 
     .file-remove {
@@ -853,6 +844,7 @@
       font-size: 13px;
       line-height: 1;
       flex-shrink: 0;
+      padding: 0 2px;
     }
 
     .file-remove:hover {
@@ -1104,6 +1096,16 @@
         <h3 id="setting-title">토론 설정</h3>
         <label id="topic-label">주제</label>
         <textarea id="topic-input" placeholder="예: AGI는 인류에게 축복인가, 재앙인가?"></textarea>
+
+        <!-- 파일 첨부 -->
+        <div style="margin-bottom:8px">
+          <label class="file-btn" for="file-input" id="file-btn-label" style="display:inline-flex;margin-bottom:5px">
+            📎 파일 첨부 <span id="file-count-hint" style="color:var(--text-3);margin-left:4px">(최대 3개)</span>
+          </label>
+          <input type="file" id="file-input" accept=".txt,.md,.csv,.json,.pdf,image/*" multiple style="display:none"
+            onchange="onFileSelect(this)">
+          <div id="file-preview-area" style="display:flex;flex-direction:column;gap:5px"></div>
+        </div>
         <label>라운드 수</label>
         <select id="rounds-select">
           <option value="2">2 라운드</option>
@@ -1196,16 +1198,6 @@
       <div class="topic-bar" id="topic-bar">
         <span class="topic-text" id="topic-display"></span>
         <span class="round-pill" id="round-display">준비 중</span>
-      </div>
-
-      <!-- 파일 첨부 바 -->
-      <div class="file-attach-bar">
-        <label class="file-btn" for="file-input" id="file-btn-label">
-          📎 파일 첨부 <span id="file-count-hint" style="color:var(--text-3)">(최대 3개)</span>
-        </label>
-        <input type="file" id="file-input" accept=".txt,.md,.csv,.json,.pdf,image/*" multiple style="display:none"
-          onchange="onFileSelect(this)">
-        <div id="file-preview-area" style="display:flex;flex-wrap:wrap;gap:6px;flex:1"></div>
       </div>
 
       <div class="messages" id="messages">
