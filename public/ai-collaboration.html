@@ -793,9 +793,13 @@ function renderFilePreviews() {
     const thumb = f.type === 'image'
       ? `<img class="file-preview-thumb" src="data:${f.mimeType};base64,${f.content}">`
       : `<span style="font-size:15px">${icon}</span>`;
+    const dlBtn = f.type === 'image'
+      ? `<span onclick="downloadAttachedImage(${i})" title="이미지 다운로드" style="cursor:pointer;color:var(--text-3);font-size:11px;flex-shrink:0;padding:0 2px" onmouseover="this.style.color='#34d399'" onmouseout="this.style.color='var(--text-3)'">↓</span>`
+      : '';
     return `<div class="file-preview">
       ${thumb}
       <span class="file-preview-name" title="${f.name}">${f.name}</span>
+      ${dlBtn}
       <span class="file-remove" onclick="removeFile(${i})" title="삭제">✕</span>
     </div>`;
   }).join('');
@@ -806,6 +810,17 @@ function renderFilePreviews() {
   if (hint) hint.textContent = attachedFiles.length > 0
     ? `(${attachedFiles.length}/3)`
     : '(최대 3개)';
+}
+
+function downloadAttachedImage(idx) {
+  const f = attachedFiles[idx];
+  if (!f || f.type !== 'image') return;
+  const ext = f.mimeType === 'image/jpeg' ? 'jpg' : 'png';
+  const baseName = f.name.replace(/\.[^.]+$/, '');
+  const a = document.createElement('a');
+  a.href = `data:${f.mimeType};base64,${f.content}`;
+  a.download = `${baseName}_converted.${ext}`;
+  a.click();
 }
 
 function removeFile(idx) {
