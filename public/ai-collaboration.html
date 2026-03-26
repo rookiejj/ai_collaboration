@@ -759,7 +759,18 @@ async function onFileSelect(input) {
         attachedFiles.push({ type:'image', name, content: base64, mimeType: mime });
       } else if (ext === 'pdf') {
         const text = await extractPdfText(file);
-        attachedFiles.push({ type:'text', name, content: text, mimeType: 'text/plain' });
+        if (text.length < 50) {
+          setStatus('PDF 변환 중...', true);
+          const merged = await convertPdfToSingleImage(file);
+          if (!merged) {
+            alert(`"${name}" PDF 변환에 실패했습니다.`);
+            setStatus('대기 중', false);
+            return;
+          }
+          attachedFiles.push({ type:'image', name, content: merged, mimeType:'image/jpeg' });
+        } else {
+          attachedFiles.push({ type:'text', name, content: text, mimeType: 'text/plain' });
+        }
       } else {
         const text = await readAsText(file);
         attachedFiles.push({ type:'text', name, content: text, mimeType: 'text/plain' });
@@ -818,6 +829,43 @@ function readAsBase64(file) {
     r.onerror = () => rej(new Error('이미지 읽기 실패'));
     r.readAsDataURL(file);
   });
+}
+
+async function convertPdfToSingleImage(file) {
+  if (!window.pdfjsLib) {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const ab = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({ data: ab }).promise;
+
+  // 모든 페이지를 1.2배 해상도로 렌더링 후 세로로 합치기
+  const scale = 1.2;
+  const canvases = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const vp = page.getViewport({ scale });
+    const c = document.createElement('canvas');
+    c.width = vp.width; c.height = vp.height;
+    await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+    canvases.push(c);
+  }
+
+  // 전체 높이 합산 후 하나의 캔버스에 세로로 이어붙이기
+  const totalWidth  = Math.max(...canvases.map(c => c.width));
+  const totalHeight = canvases.reduce((sum, c) => sum + c.height, 0);
+  const merged = document.createElement('canvas');
+  merged.width = totalWidth; merged.height = totalHeight;
+  const ctx = merged.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, totalWidth, totalHeight);
+  let y = 0;
+  for (const c of canvases) {
+    ctx.drawImage(c, 0, y);
+    y += c.height;
+  }
+  return merged.toDataURL('image/jpeg', 0.82).split(',')[1];
 }
 
 async function extractPdfText(file) {
