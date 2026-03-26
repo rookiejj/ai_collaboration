@@ -786,8 +786,7 @@ async function onFileSelect(input) {
           if (ocrText && ocrText.length > 20) {
             attachedFiles.push({ type:'text', name, content: `[이미지 파일: ${name}]\n\n${ocrText}`, mimeType:'text/plain' });
           } else {
-            // OCR 실패 시 이미지 그대로
-            attachedFiles.push({ type:'image', name, content: base64, mimeType: mime });
+            alert(`"${name}"\n\n이미지에서 텍스트를 인식하지 못했습니다.\n텍스트가 포함된 파일이나 PDF를 첨부해주세요.`);
           }
         } finally {
           $('pdf-converting').classList.remove('show');
