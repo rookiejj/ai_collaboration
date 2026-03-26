@@ -120,11 +120,22 @@ input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; accent-colo
 /* ── 파일 첨부 ── */
 .file-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; padding: 5px 10px; border-radius: 6px; cursor: pointer; border: 1px dashed var(--border-1); color: var(--text-2); background: transparent; transition: border-color .15s, color .15s; }
 .file-btn:hover { border-color: var(--c-claude); color: var(--c-claude); }
+.file-btn.disabled { opacity: 0.4; pointer-events: none; cursor: not-allowed; }
 .file-preview { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-1); background: var(--bg-2); border: 1px solid var(--border-1); border-radius: 6px; padding: 5px 8px; width: 100%; }
 .file-preview-thumb { width: 20px; height: 20px; border-radius: 3px; object-fit: cover; flex-shrink: 0; }
 .file-preview-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.file-action { cursor: pointer; font-size: 12px; line-height: 1; flex-shrink: 0; padding: 2px 4px; border-radius: 3px; color: var(--text-3); transition: color .14s, background .14s; }
+.file-action:hover { color: var(--text-0); background: var(--bg-3); }
 .file-remove { cursor: pointer; color: var(--text-3); font-size: 13px; line-height: 1; flex-shrink: 0; padding: 0 2px; }
 .file-remove:hover { color: #f87171; }
+
+/* ── PDF 변환 중 오버레이 ── */
+.pdf-converting { display: none; position: fixed; inset: 0; z-index: 998; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; }
+.pdf-converting.show { display: flex; }
+.pdf-converting-box { background: var(--bg-2); border: 1px solid var(--border-1); border-radius: 12px; padding: 24px 32px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.pdf-converting-bar { width: 200px; height: 4px; background: var(--bg-3); border-radius: 2px; overflow: hidden; }
+.pdf-converting-bar-fill { height: 100%; width: 40%; background: var(--c-claude); border-radius: 2px; animation: barSlide 1.2s ease-in-out infinite; }
+@keyframes barSlide { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
 
 /* ── 모바일 드로어 오버레이 ── */
 .drawer-overlay { display: none; position: fixed; inset: 0; bottom: 52px; background: rgba(0,0,0,0.5); z-index: 200; }
@@ -220,6 +231,15 @@ input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; accent-colo
 
 <!-- 모바일 드로어 오버레이 -->
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawers()"></div>
+
+<!-- PDF 변환 중 오버레이 -->
+<div class="pdf-converting" id="pdf-converting">
+  <div class="pdf-converting-box">
+    <div style="font-size:13px;color:var(--text-1)">📄 PDF를 이미지로 변환하는 중...</div>
+    <div class="pdf-converting-bar"><div class="pdf-converting-bar-fill"></div></div>
+    <div style="font-size:11px;color:var(--text-3)">페이지 수에 따라 잠시 걸릴 수 있어요</div>
+  </div>
+</div>
 
 <!-- 하단 탭바 -->
 <nav class="bottom-nav">
@@ -760,14 +780,22 @@ async function onFileSelect(input) {
       } else if (ext === 'pdf') {
         const text = await extractPdfText(file);
         if (text.length < 50) {
-          setStatus('PDF 변환 중...', true);
-          const merged = await convertPdfToSingleImage(file);
-          if (!merged) {
-            alert(`"${name}" PDF 변환에 실패했습니다.`);
-            setStatus('대기 중', false);
-            return;
+          // 변환 중 UI 표시
+          $('pdf-converting').classList.add('show');
+          $('file-btn-label').classList.add('disabled');
+          $('file-input').disabled = true;
+          try {
+            const merged = await convertPdfToSingleImage(file);
+            if (!merged) {
+              alert(`"${name}" PDF 변환에 실패했습니다.`);
+            } else {
+              attachedFiles.push({ type:'image', name, content: merged, mimeType:'image/jpeg' });
+            }
+          } finally {
+            $('pdf-converting').classList.remove('show');
+            $('file-btn-label').classList.remove('disabled');
+            $('file-input').disabled = false;
           }
-          attachedFiles.push({ type:'image', name, content: merged, mimeType:'image/jpeg' });
         } else {
           attachedFiles.push({ type:'text', name, content: text, mimeType: 'text/plain' });
         }
@@ -794,7 +822,7 @@ function renderFilePreviews() {
       ? `<img class="file-preview-thumb" src="data:${f.mimeType};base64,${f.content}">`
       : `<span style="font-size:15px">${icon}</span>`;
     const dlBtn = f.type === 'image'
-      ? `<span onclick="downloadAttachedImage(${i})" title="이미지 다운로드" style="cursor:pointer;color:var(--text-3);font-size:11px;flex-shrink:0;padding:0 2px" onmouseover="this.style.color='#34d399'" onmouseout="this.style.color='var(--text-3)'">↓</span>`
+      ? `<span class="file-action" onclick="downloadAttachedImage(${i})" title="변환된 이미지 다운로드">↓</span>`
       : '';
     return `<div class="file-preview">
       ${thumb}
