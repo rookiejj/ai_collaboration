@@ -384,7 +384,10 @@ input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; accent-colo
         <div class="status-led" id="status-led"></div>
         <span id="status-msg">대기 중</span>
       </div>
-      <span id="progress-txt" style="font-size:11px;"></span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="progress-txt" style="font-size:11px;"></span>
+        <button id="pdf-btn" onclick="downloadPDF()" style="display:none;font-size:11px;padding:4px 10px;color:#34d399;border-color:rgba(52,211,153,0.3)">↓ PDF 저장</button>
+      </div>
     </div>
   </div>
 
@@ -1135,7 +1138,69 @@ async function startDebate() {
   $('start-btn').disabled = false;
   $('stop-btn').style.display = 'none';
   $('stop-overlay').classList.remove('show');
+  if (!stopped) $('pdf-btn').style.display = 'inline-block';
   running = false;
+}
+
+function downloadPDF() {
+  const topic = $('topic-input').value.trim() || '토론';
+  const modeLabel = currentMode === 'debate' ? '토론' : '협업 논의';
+  const now = new Date().toLocaleString('ko-KR');
+
+  // 메시지 수집
+  const msgs = Array.from($('messages').querySelectorAll('.message'));
+  const rows = msgs.map(msg => {
+    const name    = msg.querySelector('.msg-name')?.textContent || '';
+    const role    = msg.querySelector('.msg-role')?.textContent || '';
+    const content = msg.querySelector('.msg-text')?.innerText  || '';
+    const avatarEl = msg.querySelector('.avatar');
+    const color   = avatarEl?.style.color || '#888';
+    return { name, role, content, color };
+  });
+
+  const msgHTML = rows.map(r => `
+    <div class="msg">
+      <div class="msg-head">
+        <span class="dot" style="background:${r.color}"></span>
+        <strong style="color:${r.color}">${r.name}</strong>
+        ${r.role ? `<span class="role">${r.role}</span>` : ''}
+      </div>
+      <div class="msg-body">${r.content.replace(/\n/g,'<br>')}</div>
+    </div>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>${topic} - AI ${modeLabel}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Malgun Gothic', sans-serif; font-size: 13px; color: #1a1a1a; padding: 40px; line-height: 1.7; }
+  h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .meta { font-size: 12px; color: #666; margin-bottom: 28px; padding-bottom: 14px; border-bottom: 2px solid #eee; }
+  .msg { margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid #f0f0f0; page-break-inside: avoid; }
+  .msg:last-child { border-bottom: none; }
+  .msg-head { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .role { font-size: 11px; color: #999; }
+  .msg-body { padding-left: 15px; color: #333; white-space: pre-wrap; word-break: break-word; }
+  @media print {
+    body { padding: 20px; }
+    @page { margin: 20mm; }
+  }
+</style>
+</head>
+<body>
+  <h1>${topic}</h1>
+  <div class="meta">AI ${modeLabel} · ${now} · ${rows.length}개 발언</div>
+  ${msgHTML}
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.onload = () => { win.print(); };
 }
 
 async function generateClosing(hist, topic) {
@@ -1193,6 +1258,7 @@ function clearDebate() {
   $('topic-bar').style.display = 'none';
   setStatus('대기 중', false);
   $('progress-txt').textContent = '';
+  $('pdf-btn').style.display = 'none';
   attachedFiles = [];
   renderFilePreviews();
 }
