@@ -235,9 +235,9 @@ input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; accent-colo
 <!-- PDF 변환 중 오버레이 -->
 <div class="pdf-converting" id="pdf-converting">
   <div class="pdf-converting-box">
-    <div id="pdf-converting-msg" style="font-size:13px;color:var(--text-1)">📄 PDF를 텍스트로 변환하는 중...</div>
+    <div id="pdf-converting-msg" style="font-size:13px;color:var(--text-1)">⏳ 파일 분석 중...</div>
     <div class="pdf-converting-bar"><div class="pdf-converting-bar-fill"></div></div>
-    <div style="font-size:11px;color:var(--text-3)">페이지 수에 따라 잠시 걸릴 수 있어요</div>
+    <div id="pdf-converting-sub" style="font-size:11px;color:var(--text-2);text-align:center;line-height:1.6">이미지 형식의 파일이라 글자 인식(OCR) 작업이 필요해요.<br>페이지당 약 5~10초 소요됩니다.</div>
   </div>
 </div>
 
@@ -779,7 +779,8 @@ async function onFileSelect(input) {
         $('pdf-converting').classList.add('show');
         $('file-btn-label').classList.add('disabled');
         $('file-input').disabled = true;
-        document.getElementById('pdf-converting-msg').textContent = '🔍 이미지에서 텍스트를 추출하는 중...';
+        document.getElementById('pdf-converting-msg').textContent = '⏳ 파일 분석 중...';
+        document.getElementById('pdf-converting-sub').innerHTML = '이미지 형식의 파일이라 글자 인식(OCR) 작업이 필요해요.<br>페이지당 약 5~10초 소요됩니다.';
         try {
           const base64 = await readAsBase64(file);
           const ocrText = await ocrFromBase64(base64, mime);
@@ -792,7 +793,7 @@ async function onFileSelect(input) {
           $('pdf-converting').classList.remove('show');
           $('file-btn-label').classList.remove('disabled');
           $('file-input').disabled = false;
-          document.getElementById('pdf-converting-msg').textContent = '📄 PDF를 텍스트로 변환하는 중...';
+          document.getElementById('pdf-converting-msg').textContent = '⏳ 파일 분석 중...';
         }
       } else if (ext === 'pdf') {
         const text = await extractPdfText(file);
@@ -901,10 +902,12 @@ async function ocrPdf(file) {
   const ab = await file.arrayBuffer();
   const pdf = await window.pdfjsLib.getDocument({ data: ab }).promise;
   let fullText = '';
-  const msgEl = document.getElementById('pdf-converting-msg');
+  const msgEl  = document.getElementById('pdf-converting-msg');
+  const subEl  = document.getElementById('pdf-converting-sub');
 
   for (let i = 1; i <= pdf.numPages; i++) {
-    if (msgEl) msgEl.textContent = `🔍 OCR 진행 중... (${i}/${pdf.numPages} 페이지)`;
+    if (msgEl) msgEl.textContent = `⏳ 파일 분석 중... (${i}/${pdf.numPages} 페이지)`;
+    if (subEl) subEl.innerHTML = `이미지 형식의 파일이라 글자 인식(OCR) 작업이 필요해요.<br>페이지당 약 5~10초 소요됩니다.`;
     const page = await pdf.getPage(i);
     const vp = page.getViewport({ scale: 1.5 });
     const canvas = document.createElement('canvas');
