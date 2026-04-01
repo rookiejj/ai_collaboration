@@ -1112,6 +1112,26 @@ function buildPrompt(hist, topic, r, totalRounds) {
   return MODES[currentMode].buildPrompt(hist, topic, r, totalRounds);
 }
 
+// 재시도 헬퍼: overloaded / rate_limit 시 최대 3회 재시도
+async function withRetry(fn, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch(e) {
+      const msg = e.message || '';
+      const isRetryable = msg.includes('overloaded') || msg.includes('529') ||
+                          msg.includes('rate') || msg.includes('503') || msg.includes('502');
+      if (isRetryable && attempt < maxRetries) {
+        const delay = attempt * 4000; // 4초, 8초, 12초
+        setStatus(`서버 과부하 — ${delay/1000}초 후 재시도 (${attempt}/${maxRetries})...`, true);
+        await sleep(delay);
+      } else {
+        throw e;
+      }
+    }
+  }
+}
+
 async function callAnthropic(m, hist, topic, r, totalRounds) {
   const key = $('key-claude').value.trim();
   const imgFiles = attachedFiles.filter(f => f.type === 'image');
@@ -1126,14 +1146,16 @@ async function callAnthropic(m, hist, topic, r, totalRounds) {
     userContent = buildPromptWithFile(hist, topic, r, totalRounds);
   }
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({ model:m.apiModel, max_tokens:1024, system:m.persona, messages:[{role:'user', content:userContent}] })
+  return withRetry(async () => {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({ model:m.apiModel, max_tokens:1024, system:m.persona, messages:[{role:'user', content:userContent}] })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message||'HTTP '+res.status);
+    return data.content[0].text;
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message||'HTTP '+res.status);
-  return data.content[0].text;
 }
 
 async function callOpenAI(m, hist, topic, r, totalRounds) {
@@ -1150,14 +1172,16 @@ async function callOpenAI(m, hist, topic, r, totalRounds) {
     userContent = buildPromptWithFile(hist, topic, r, totalRounds);
   }
 
-  const res = await fetch(openaiEndpoint(), {
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-    body:JSON.stringify({ model:m.apiModel, max_tokens:1024, messages:[{role:'system',content:m.persona},{role:'user',content:userContent}] })
+  return withRetry(async () => {
+    const res = await fetch(openaiEndpoint(), {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({ model:m.apiModel, max_tokens:1024, messages:[{role:'system',content:m.persona},{role:'user',content:userContent}] })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message||'HTTP '+res.status);
+    return data.choices[0].message.content;
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message||'HTTP '+res.status);
-  return data.choices[0].message.content;
 }
 
 async function callGemini(m, hist, topic, r, totalRounds) {
@@ -1170,16 +1194,18 @@ async function callGemini(m, hist, topic, r, totalRounds) {
     { text: buildPromptWithFile(hist, topic, r, totalRounds) }
   ];
 
-  const res = await fetch(url, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ systemInstruction:{parts:[{text:m.persona}]}, contents:[{role:'user', parts}], generationConfig:{maxOutputTokens:2048,temperature:0.85} })
+  return withRetry(async () => {
+    const res = await fetch(url, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ systemInstruction:{parts:[{text:m.persona}]}, contents:[{role:'user', parts}], generationConfig:{maxOutputTokens:2048,temperature:0.85} })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message||'HTTP '+res.status);
+    const candidate = data.candidates[0];
+    if (candidate.finishReason === 'MAX_TOKENS') console.warn('Gemini: MAX_TOKENS hit');
+    return candidate.content.parts[0].text;
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message||'HTTP '+res.status);
-  const candidate = data.candidates[0];
-  if (candidate.finishReason === 'MAX_TOKENS') console.warn('Gemini: MAX_TOKENS hit');
-  return candidate.content.parts[0].text;
 }
 
 async function callModel(m, hist, topic, r, totalRounds) {
