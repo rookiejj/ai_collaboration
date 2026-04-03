@@ -51,6 +51,8 @@ cd ai_collaboration
 
 # 2. 프록시 서버 실행 (GPT-4o / Gemini 사용 시 필요)
 node proxy-server.js
+# 또는
+npm start
 
 # 3. 브라우저에서 열기
 open public/ai-collaboration.html   # macOS
@@ -69,7 +71,7 @@ open public/ai-collaboration.html   # macOS
 |------|----------|---------|------|
 | **Claude** | [console.anthropic.com](https://console.anthropic.com) → API Keys | `sk-ant-...` | 신규 가입 시 무료 크레딧 제공 |
 | **GPT-4o** | [platform.openai.com](https://platform.openai.com/api-keys) | `sk-proj-...` | 유료 결제 필요 |
-| **Gemini** | [aistudio.google.com](https://aistudio.google.com) → API 키 → 결제 설정 | `AIzaSy...` | 결제 계정 연결 필요 |
+| **Gemini** (`gemini-2.5-flash`) | [aistudio.google.com](https://aistudio.google.com) → API 키 → 결제 설정 | `AIzaSy...` | 결제 계정 연결 필요 |
 
 입력한 API 키는 브라우저 `localStorage`에만 저장됩니다. 외부 서버로 전송되지 않습니다.
 
@@ -138,10 +140,15 @@ ai_collaboration/
 
 - **모드 전환** — 토론 ↔ 협업 헤더 토글
 - **모델 선택** — 슬롯별 Claude / GPT-4o / Gemini 선택
+- **라운드 수 조절** — 2~5 라운드 선택 가능
+- **파일 첨부** — PDF / 이미지 / 텍스트 파일 최대 3개 첨부, 이미지·스캔 PDF는 OCR(Tesseract.js) 자동 처리
+- **PDF 저장** — 토론 완료 후 전체 대화를 프린트/PDF로 저장
 - **API 키 자동 저장** — localStorage 유지
 - **중단 기능** — 진행 중 언제든 중단 가능
 - **진행자 클로징** — 종료 후 Claude가 자동으로 요점 정리
 - **역할별 고정 색상** — 모델 변경해도 색상 유지
+- **자동 재시도** — 서버 과부하(overloaded / rate_limit) 시 최대 3회 자동 재시도
+- **모바일 반응형** — 하단 탭바 + 드로어 메뉴로 모바일 최적화
 - **Vercel / 로컬 자동 감지** — 환경에 따라 API 경로 자동 전환
 
 ---
